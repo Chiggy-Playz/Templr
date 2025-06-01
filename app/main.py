@@ -10,9 +10,9 @@ from app.users.models import User
 from app.users.routes import router as users_router
 from app.users.schemas import UserCreate, UserRead, UserUpdate
 from app.web.routes import router as web_router
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -30,6 +30,29 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+# Exception handler for unauthorized access
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions, specifically redirecting 401 to login page."""
+    if exc.status_code == 401:
+        # Check if this is an API request (JSON response expected)
+        accept_header = request.headers.get("accept", "")
+        content_type = request.headers.get("content-type", "")
+
+        # If it's an API request, return JSON response
+        if "application/json" in accept_header or "application/json" in content_type:
+            from fastapi.responses import JSONResponse
+
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+
+        # For web requests, redirect to login
+        return RedirectResponse(url="/login", status_code=302)
+
+    # For other HTTP exceptions, return JSON response
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
 
 # CORS middleware
 app.add_middleware(
@@ -90,6 +113,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
 
 # Public router last (has broad catch-all pattern)
 app.include_router(public_router)  # No prefix for public template rendering

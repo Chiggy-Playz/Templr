@@ -5,11 +5,11 @@ from app.auth.manager import get_user_manager
 from app.users.models import User
 from app.config import settings
 
-cookie_transport = CookieTransport(cookie_max_age=3600)
+cookie_transport = CookieTransport(cookie_max_age=60 * 60 * 24 * 7 * 4)  # 4 weeks
 
 jwt_authentication = JWTStrategy(
     secret=settings.secret_key,
-    lifetime_seconds=3600,
+    lifetime_seconds=60 * 60 * 24 * 7 * 4,  # 4 weeks
 )
 
 auth_backend = AuthenticationBackend(

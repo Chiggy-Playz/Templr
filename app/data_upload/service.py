@@ -7,6 +7,7 @@ import traceback
 from typing import Any, Dict, List, Optional
 import uuid
 
+from app.config import settings
 from app.data_upload.models import UploadedData, UploadJob
 from app.data_upload.schemas import UploadJobRead
 from app.database import async_session_maker
@@ -141,9 +142,7 @@ class DataUploadService:
 
                         # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
                         if not isinstance(serializable_data, dict):
-                            raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")
-
-                        # Generate unique identifier using mapped data
+                            raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")                        # Generate unique identifier using mapped data
                         identifier = await ensure_unique_identifier(session, serializable_data)
 
                         # Create uploaded data record with mapped data
@@ -158,11 +157,10 @@ class DataUploadService:
 
                         # Add to processed data for result file
                         processed_row = serializable_data.copy()
-                        processed_row["unique_identifier"] = identifier
 
-                        # Add template URLs
+                        # Add template URLs with domain
                         for template in templates:
-                            processed_row[f"{template.slug}_url"] = f"/{template.slug}/{identifier}"
+                            processed_row[f"{template.slug}_url"] = f"{settings.domain}/{template.slug}/{identifier}"
 
                         processed_data.append(processed_row)
 

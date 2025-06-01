@@ -153,7 +153,7 @@ block content %}
                 <td>
                   {% if job.status == 'completed' and job.result_file_path %}
                   <a
-                    href="/api/data-upload/download/{{ job.id }}"
+                    href="/api/data-upload/jobs/{{ job.id }}/download"
                     class="btn btn-sm btn-outline-success"
                   >
                     <i class="bi bi-download"></i> Download

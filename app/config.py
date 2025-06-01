@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://user:password@localhost/templr"
     secret_key: str = "your-secret-key-change-this"
     debug: bool = True
+    domain: str = "http://localhost:8000"
 
     class Config:
         env_file = ".env"

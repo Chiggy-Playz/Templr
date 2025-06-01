@@ -1,7 +1,9 @@
 import asyncio
 from datetime import datetime
+import logging
 import os
 from pathlib import Path
+import traceback
 from typing import Any, Dict, List, Optional
 import uuid
 
@@ -14,14 +16,17 @@ from app.utils import (
     calculate_expiry_date,
     ensure_unique_identifier,
     make_json_serializable_with_context,
+    map_data_row,
     validate_data_types,
     validate_template_variables,
-    map_data_row,
 )
 from fastapi import HTTPException, UploadFile, status
 import pandas as pd
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 
 class DataUploadService:
@@ -63,110 +68,213 @@ class DataUploadService:
         return job
 
     async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: List):
-        """Background task to process uploaded data."""
-        async with async_session_maker() as session:
-            job = None
+        """Background task to process uploaded data with comprehensive error handling."""
+        session = None
+        job = None
+
+        try:
+            session = async_session_maker()
+
+            # Get job
+            logger.info(f"Starting background processing for job {job_id}")
+            result = await session.execute(select(UploadJob).where(UploadJob.id == job_id))
+            job = result.scalar_one_or_none()
+
+            if not job:
+                logger.error(f"Job {job_id} not found in database")
+                return
+
+            # Update status to processing
+            job.status = "processing"
+            await session.commit()
+            logger.info(f"Job {job_id} status updated to processing")
+
             try:
-                # Get job
-                result = await session.execute(select(UploadJob).where(UploadJob.id == job_id))
-                job = result.scalar_one()
-
-                # Update status to processing
-                job.status = "processing"
-                await session.commit()
-
-                # Read file
+                # Read file with proper error handling
+                logger.info(f"Reading file: {file_path}")
                 if file_path.suffix.lower() in [".xlsx", ".xls"]:
                     df = pd.read_excel(file_path)
                 elif file_path.suffix.lower() == ".csv":
                     df = pd.read_csv(file_path)
                 else:
-                    raise ValueError("Unsupported file format")
+                    raise ValueError(f"Unsupported file format: {file_path.suffix}")
+
+                logger.info(f"File read successfully. Rows: {len(df)}, Columns: {list(df.columns)}")
 
                 # Validate headers against all templates
                 for template in templates:
+                    logger.debug(f"Validating template {template.slug} against data columns")
                     is_valid, error_msg = validate_template_variables(template.variables, df.columns.tolist())
                     if not is_valid:
                         raise ValueError(f"Template '{template.slug}': {error_msg}")
 
                 job.total_rows = len(df)
                 await session.commit()
+                logger.info(f"Template validation passed. Processing {len(df)} rows")
 
-                # Process each row
+                # Process each row with error tracking
                 processed_data = []
                 data_columns = df.columns.tolist()
-                
+                failed_rows = []
                 for index, (_, row) in enumerate(df.iterrows()):
-                    row_data = row.to_dict()
+                    row_data = {}  # Initialize to avoid unbound variable issues
+                    try:
+                        row_data = row.to_dict()
 
-                    # Map data columns to template variables for each template
-                    for template in templates:
-                        # Map the row data to template variable names
-                        mapped_data = map_data_row(row_data, template.variables, data_columns)
-                        
-                        # Validate data types against template variables
-                        is_valid, error_msg = validate_data_types(mapped_data, template.variables)
-                        if not is_valid:
-                            raise ValueError(f"Row {index + 1}, Template '{template.slug}': {error_msg}")                    # Use the mapped data for the first template (they should all have the same mapping)
-                    final_mapped_data = map_data_row(row_data, templates[0].variables, data_columns)
-                    
-                    # Make data JSON serializable (convert pandas Timestamps, etc.) with variable type context
-                    serializable_data = make_json_serializable_with_context(final_mapped_data, templates[0].variables)
-                    
-                    # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
-                    if not isinstance(serializable_data, dict):
-                        raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")
+                        # Map data columns to template variables for each template
+                        for template in templates:
+                            # Map the row data to template variable names
+                            mapped_data = map_data_row(row_data, template.variables, data_columns)
 
-                    # Generate unique identifier using mapped data
-                    identifier = await ensure_unique_identifier(session, serializable_data)
+                            # Validate data types against template variables
+                            is_valid, error_msg = validate_data_types(mapped_data, template.variables)
+                            if not is_valid:
+                                raise ValueError(f"Template '{template.slug}': {error_msg}")
 
-                    # Create uploaded data record with mapped data
-                    uploaded_data = UploadedData(
-                        identifier=identifier,
-                        payload=serializable_data,  # Store the JSON-serializable data
-                        template_slugs=job.template_slugs,
-                        expires_at=calculate_expiry_date(),
-                        owner_id=job.owner_id,
-                    )
-                    session.add(uploaded_data)                    # Add to processed data for result file
-                    processed_row = serializable_data.copy()
-                    processed_row["unique_identifier"] = identifier
+                        # Use the mapped data for the first template (they should all have the same mapping)
+                        final_mapped_data = map_data_row(row_data, templates[0].variables, data_columns)
 
-                    # Add template URLs
-                    for template in templates:
-                        processed_row[f"{template.slug}_url"] = f"/{template.slug}/{identifier}"
+                        # Make data JSON serializable (convert pandas Timestamps, NaN values, etc.)
+                        serializable_data = make_json_serializable_with_context(
+                            final_mapped_data, templates[0].variables
+                        )
 
-                    processed_data.append(processed_row)
+                        # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
+                        if not isinstance(serializable_data, dict):
+                            raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")
 
-                    job.processed_rows = index + 1
-                    if (index + 1) % 100 == 0:  # Commit every 100 rows
-                        await session.commit()
+                        # Generate unique identifier using mapped data
+                        identifier = await ensure_unique_identifier(session, serializable_data)
+
+                        # Create uploaded data record with mapped data
+                        uploaded_data = UploadedData(
+                            identifier=identifier,
+                            payload=serializable_data,  # Store the JSON-serializable data
+                            template_slugs=job.template_slugs,
+                            expires_at=calculate_expiry_date(),
+                            owner_id=job.owner_id,
+                        )
+                        session.add(uploaded_data)
+
+                        # Add to processed data for result file
+                        processed_row = serializable_data.copy()
+                        processed_row["unique_identifier"] = identifier
+
+                        # Add template URLs
+                        for template in templates:
+                            processed_row[f"{template.slug}_url"] = f"/{template.slug}/{identifier}"
+
+                        processed_data.append(processed_row)
+
+                        job.processed_rows = index + 1
+
+                        # Commit every 100 rows to avoid large transactions
+                        if (index + 1) % 100 == 0:
+                            await session.commit()
+                            logger.debug(f"Committed batch at row {index + 1}")
+
+                    except Exception as row_error:
+                        logger.warning(f"Failed to process row {index + 1}: {str(row_error)}")
+                        failed_rows.append(
+                            {
+                                "row": index + 1,
+                                "error": str(row_error),
+                                "data": str(row_data)[:200] + "..." if len(str(row_data)) > 200 else str(row_data),
+                            }
+                        )
+
+                        # If too many rows fail, abort the process
+                        if len(failed_rows) > len(df) * 0.5:  # More than 50% failed
+                            raise ValueError(
+                                f"Too many rows failed ({len(failed_rows)} out of {index + 1}). Sample errors: {failed_rows[:3]}"
+                            )
+
+                # Final commit for any remaining rows
+                await session.commit()
+                logger.info(f"All rows processed. Success: {len(processed_data)}, Failed: {len(failed_rows)}")
 
                 # Create result file
-                result_df = pd.DataFrame(processed_data)
-                result_file_path = self.upload_dir / f"result_{job_id}.csv"
-                result_df.to_csv(result_file_path, index=False)
+                if processed_data:
+                    result_df = pd.DataFrame(processed_data)
+                    result_file_path = self.upload_dir / f"result_{job_id}.csv"
+                    result_df.to_csv(result_file_path, index=False)
+                    logger.info(f"Result file created: {result_file_path}")
+                else:
+                    result_file_path = None
+                    logger.warning("No data was successfully processed")
 
                 # Update job as completed
                 job.status = "completed"
-                job.result_file_path = str(result_file_path)
+                job.result_file_path = str(result_file_path) if result_file_path else None
                 job.completed_at = datetime.utcnow()
+
+                # Add summary of failed rows to error message if any
+                if failed_rows:
+                    job.error_message = (
+                        f"Completed with {len(failed_rows)} failed rows. Sample errors: {failed_rows[:3]}"
+                    )
+
                 await session.commit()
+                logger.info(f"Job {job_id} completed successfully")
 
                 # Clean up original file
-                file_path.unlink()
-
-            except Exception as e:
-                # Update job as failed (if job was retrieved)
-                if job is not None:
-                    job.status = "failed"
-                    job.error_message = str(e)
-                    job.completed_at = datetime.utcnow()
-                    await session.commit()
-
-                # Clean up files
                 if file_path.exists():
                     file_path.unlink()
+                    logger.debug(f"Cleaned up original file: {file_path}")
+
+            except pd.errors.EmptyDataError:
+                logger.error(f"Empty file provided for job {job_id}")
+                raise ValueError("The uploaded file is empty or has no data")
+            except pd.errors.ParserError as pe:
+                logger.error(f"File parsing error for job {job_id}: {str(pe)}")
+                raise ValueError(f"Failed to parse file: {str(pe)}")
+            except ValueError as ve:
+                # Handle validation and data errors
+                logger.error(f"Validation error in job {job_id}: {str(ve)}")
+                raise ve
+            except Exception as e:
+                # Handle unexpected errors during processing
+                logger.error(f"Unexpected error during processing of job {job_id}: {str(e)}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                raise ValueError(f"Processing failed: {str(e)}")
+
+        except Exception as e:
+            # Final catch-all error handling
+            error_msg = str(e)
+            logger.error(f"Background task failed for job {job_id}: {error_msg}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+
+            # Update job as failed if we have access to it
+            if job is not None and session is not None:
+                try:
+                    # Rollback any pending transaction
+                    await session.rollback()
+
+                    # Update job status
+                    job.status = "failed"
+                    job.error_message = error_msg
+                    job.completed_at = datetime.utcnow()
+                    await session.commit()
+                    logger.info(f"Job {job_id} marked as failed")
+                except Exception as commit_error:
+                    logger.error(f"Failed to update job status for {job_id}: {str(commit_error)}")
+
+            # Clean up files
+            if file_path.exists():
+                try:
+                    file_path.unlink()
+                    logger.debug(f"Cleaned up file after error: {file_path}")
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to clean up file {file_path}: {str(cleanup_error)}")
+
+        finally:
+            # Ensure session is properly closed
+            if session is not None:
+                try:
+                    await session.close()
+                except Exception as close_error:
+                    logger.error(f"Error closing session: {str(close_error)}")
+            logger.info(f"Background processing completed for job {job_id}")
 
     async def get_upload_jobs(self, owner: User, skip: int = 0, limit: int = 100) -> List[UploadJob]:
         result = await self.session.execute(

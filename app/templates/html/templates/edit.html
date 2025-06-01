@@ -141,9 +141,9 @@
       const container = document.getElementById('variables-container');
       const variableDiv = document.createElement('div');
       variableDiv.className = 'mb-3 variable-item border p-3 rounded';
-      
+
       const aliases = varData && varData.aliases && Array.isArray(varData.aliases) ? varData.aliases.join(', ') : '';
-      
+
       variableDiv.innerHTML = `
           <div class="row mb-2">
               <div class="col-6">
@@ -204,10 +204,10 @@
           const aliasesInput = item.querySelector(`input[name^="var_aliases_"]`);
 
           if (nameInput && nameInput.value.trim()) {
-              const aliases = aliasesInput && aliasesInput.value.trim() 
+              const aliases = aliasesInput && aliasesInput.value.trim()
                 ? aliasesInput.value.split(',').map(alias => alias.trim()).filter(alias => alias)
                 : [];
-              
+
               variables.push({
                   name: nameInput.value.trim(),
                   type: typeSelect.value,

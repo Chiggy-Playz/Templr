@@ -178,20 +178,26 @@
       e.preventDefault();
 
       const formData = new FormData(e.target);
-      const variables = [];      // Collect variables
+      const variables = []; // Collect variables
       const variableItems = document.querySelectorAll(".variable-item");
       variableItems.forEach((item, index) => {
         const nameInput = item.querySelector(`input[name="var_name_${index}"]`);
         const typeSelect = item.querySelector(
           `select[name="var_type_${index}"]`
         );
-        const aliasesInput = item.querySelector(`input[name="var_aliases_${index}"]`);
+        const aliasesInput = item.querySelector(
+          `input[name="var_aliases_${index}"]`
+        );
 
         if (nameInput && nameInput.value.trim()) {
-          const aliases = aliasesInput && aliasesInput.value.trim() 
-            ? aliasesInput.value.split(',').map(alias => alias.trim()).filter(alias => alias)
-            : [];
-          
+          const aliases =
+            aliasesInput && aliasesInput.value.trim()
+              ? aliasesInput.value
+                  .split(",")
+                  .map((alias) => alias.trim())
+                  .filter((alias) => alias)
+              : [];
+
           variables.push({
             name: nameInput.value.trim(),
             type: typeSelect.value,

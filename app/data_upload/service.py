@@ -13,6 +13,7 @@ from app.users.models import User
 from app.utils import (
     calculate_expiry_date,
     ensure_unique_identifier,
+    make_json_serializable,
     validate_data_types,
     validate_template_variables,
     map_data_row,
@@ -106,26 +107,29 @@ class DataUploadService:
                         # Validate data types against template variables
                         is_valid, error_msg = validate_data_types(mapped_data, template.variables)
                         if not is_valid:
-                            raise ValueError(f"Row {index + 1}, Template '{template.slug}': {error_msg}")
-
-                    # Use the mapped data for the first template (they should all have the same mapping)
+                            raise ValueError(f"Row {index + 1}, Template '{template.slug}': {error_msg}")                    # Use the mapped data for the first template (they should all have the same mapping)
                     final_mapped_data = map_data_row(row_data, templates[0].variables, data_columns)
+                    
+                    # Make data JSON serializable (convert pandas Timestamps, etc.)
+                    serializable_data = make_json_serializable(final_mapped_data)
+                    
+                    # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
+                    if not isinstance(serializable_data, dict):
+                        raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")
 
                     # Generate unique identifier using mapped data
-                    identifier = await ensure_unique_identifier(session, final_mapped_data)
+                    identifier = await ensure_unique_identifier(session, serializable_data)
 
                     # Create uploaded data record with mapped data
                     uploaded_data = UploadedData(
                         identifier=identifier,
-                        payload=final_mapped_data,  # Store the mapped data
+                        payload=serializable_data,  # Store the JSON-serializable data
                         template_slugs=job.template_slugs,
                         expires_at=calculate_expiry_date(),
                         owner_id=job.owner_id,
                     )
-                    session.add(uploaded_data)
-
-                    # Add to processed data for result file
-                    processed_row = final_mapped_data.copy()
+                    session.add(uploaded_data)                    # Add to processed data for result file
+                    processed_row = serializable_data.copy()
                     processed_row["unique_identifier"] = identifier
 
                     # Add template URLs

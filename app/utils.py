@@ -1,13 +1,15 @@
 import hashlib
 import secrets
 import string
-from typing import Dict, Any
-from datetime import datetime, timedelta
+from typing import Dict, Any, Union, List
+from datetime import datetime, timedelta, date
 import re
 from jinja2 import Template, TemplateError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.data_upload.models import UploadedData
+import json
+from datetime import date
 
 
 def generate_unique_identifier(data: Dict[str, Any], min_length: int = 8) -> str:
@@ -166,3 +168,25 @@ def validate_data_types(row_data: Dict[str, Any], template_variables: list) -> t
                         return False, f"Variable '{var_name}' should be date, got invalid format: {value}"
     
     return True, ""
+
+
+def make_json_serializable(data: Any) -> Any:
+    """
+    Convert data to JSON serializable format.
+    Handles pandas Timestamps, datetime objects, and other non-serializable types.
+    """
+    if isinstance(data, dict):
+        return {key: make_json_serializable(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [make_json_serializable(item) for item in data]
+    elif hasattr(data, 'isoformat'):  # datetime, date, pandas Timestamp
+        return data.isoformat()
+    elif hasattr(data, 'to_pydatetime'):  # pandas Timestamp
+        return data.to_pydatetime().isoformat()
+    elif hasattr(data, 'item'):  # numpy scalars
+        return data.item()
+    elif str(type(data)).startswith("<class 'pandas"):  # Other pandas types
+        return str(data)
+    else:
+        # For basic types that are already JSON serializable
+        return data

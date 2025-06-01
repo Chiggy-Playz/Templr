@@ -1,0 +1,4 @@
+Customer_Name,Customer_Address,Legal_Date,Loan_Amount,Loan_ID,Outstanding_amount,Authorised_Rep
+John Doe,123 Main St,2025-06-01,100000.00,L001,15000.50,Sarah Johnson
+Jane Smith,456 Oak Ave,2025-06-02,75000.00,L002,8500.25,Michael Brown
+Bob Wilson,789 Pine Rd,2025-06-03,120000.00,L003,22000.75,Lisa Davis

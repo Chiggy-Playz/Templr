@@ -27,7 +27,7 @@
     </style>
     {% block head %}{% endblock %}
   </head>
-  <body>
+  <body class="mb-2">
     <div class="container-fluid">
       <div class={{"row" if user else ""}}>
         <!-- Sidebar -->
@@ -122,7 +122,7 @@
       // Show alerts
       function showAlert(message, type = "info") {
         const alertDiv = document.createElement("div");
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-4`;
         alertDiv.innerHTML = `
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -133,7 +133,7 @@
           if (alertDiv.parentNode) {
             alertDiv.parentNode.removeChild(alertDiv);
           }
-        }, 5000);
+        }, 10 * 1000);
       }
     </script>
     {% block scripts %}{% endblock %}

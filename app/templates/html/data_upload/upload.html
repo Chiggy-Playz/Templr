@@ -132,16 +132,28 @@ block content %}
                     {{ job.status }}
                   </span>
                 </td>
-                <td>
+                <td style="min-width: 120px">
                   {% if job.total_rows %}
-                  <div class="progress" style="height: 16px">
+                  <div class="progress position-relative" style="height: 16px">
                     <div
-                      class="progress-bar"
-                      style="width: {{ (job.processed_rows / job.total_rows * 100) if job.total_rows else 0 }}%"
+                      class="progress-bar bg-primary"
+                      role="progressbar"
+                      style="width: {{ (job.processed_rows / job.total_rows * 100) if job.total_rows else 0 }}%;"
+                    ></div>
+                    <span
+                      class="position-absolute w-100 text-center"
+                      style="
+                        font-size: 12px;
+                        color: white;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        white-space: nowrap;
+                      "
                     >
                       {{ job.processed_rows or 0 }}/{{ job.total_rows }}
-                    </div>
+                    </span>
                   </div>
+
                   {% else %} - {% endif %}
                 </td>
                 <td>

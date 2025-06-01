@@ -1,6 +1,8 @@
 import hashlib
 import secrets
 import string
+import math
+import numpy as np
 from typing import Dict, Any, Union, List
 from datetime import datetime, timedelta, date
 import re
@@ -170,11 +172,20 @@ def validate_data_types(row_data: Dict[str, Any], template_variables: list) -> t
     return True, ""
 
 
-def make_json_serializable(data: Any) -> Any:
+def make_json_serializable(data: Any, var_type: Union[str, None] = None) -> Any:
     """
     Convert data to JSON serializable format.
-    Handles pandas Timestamps, datetime objects, and other non-serializable types.
+    Handles pandas Timestamps, datetime objects, NaN values, and other non-serializable types.
+    
+    NaN imputation rules:
+    - For string fields: empty string ""
+    - For numeric fields: -1
+    - For datetime fields: epoch start (1970-01-01T00:00:00)
     """
+    # Handle NaN values first (they can come from pandas or numpy)
+    if _is_nan_value(data):
+        return _impute_nan_value(var_type)
+    
     if isinstance(data, dict):
         return {key: make_json_serializable(value) for key, value in data.items()}
     elif isinstance(data, list):
@@ -184,9 +195,72 @@ def make_json_serializable(data: Any) -> Any:
     elif hasattr(data, 'to_pydatetime'):  # pandas Timestamp
         return data.to_pydatetime().isoformat()
     elif hasattr(data, 'item'):  # numpy scalars
-        return data.item()
+        scalar_value = data.item()
+        # Check if the scalar value is NaN
+        if _is_nan_value(scalar_value):
+            return _impute_nan_value(var_type)
+        return scalar_value
     elif str(type(data)).startswith("<class 'pandas"):  # Other pandas types
-        return str(data)
+        str_value = str(data)
+        # Handle pandas NaN string representation
+        if str_value in ('nan', 'NaN', '<NA>'):
+            return _impute_nan_value(var_type)
+        return str_value
     else:
         # For basic types that are already JSON serializable
         return data
+
+
+def _is_nan_value(data: Any) -> bool:
+    """Check if a value is NaN in any form"""
+    try:
+        # Check for float NaN
+        if isinstance(data, float) and math.isnan(data):
+            return True
+        # Check for numpy NaN
+        if hasattr(data, '__iter__') and not isinstance(data, (str, dict)):
+            if np.isnan(data):
+                return True
+        # Check for pandas NA
+        try:
+            import pandas as pd
+            if pd.isna(data):
+                return True
+        except ImportError:
+            pass
+        return False
+    except (TypeError, ValueError):
+        return False
+
+
+def _impute_nan_value(var_type: Union[str, None] = None) -> Any:
+    """Impute NaN values based on variable type"""
+    if var_type == "string":
+        return ""
+    elif var_type == "number":
+        return -1
+    elif var_type == "date":
+        return datetime(1970, 1, 1)  # Return actual datetime object
+    else:
+        # Default to empty string for unknown types
+        return ""
+
+
+def make_json_serializable_with_context(row_data: Dict[str, Any], template_variables: list) -> Dict[str, Any]:
+    """
+    Convert row data to JSON serializable format with variable type context.
+    This version knows the expected data types and can properly impute NaN values.
+    """
+    # Create a lookup for variable types
+    var_type_lookup = {}
+    for var_def in template_variables:
+        var_name = var_def["name"]
+        var_type = var_def["type"]
+        var_type_lookup[var_name] = var_type
+    
+    result = {}
+    for key, value in row_data.items():
+        var_type = var_type_lookup.get(key, None)
+        result[key] = make_json_serializable(value, var_type)
+    
+    return result

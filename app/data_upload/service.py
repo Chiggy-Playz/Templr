@@ -13,7 +13,7 @@ from app.users.models import User
 from app.utils import (
     calculate_expiry_date,
     ensure_unique_identifier,
-    make_json_serializable,
+    make_json_serializable_with_context,
     validate_data_types,
     validate_template_variables,
     map_data_row,
@@ -110,8 +110,8 @@ class DataUploadService:
                             raise ValueError(f"Row {index + 1}, Template '{template.slug}': {error_msg}")                    # Use the mapped data for the first template (they should all have the same mapping)
                     final_mapped_data = map_data_row(row_data, templates[0].variables, data_columns)
                     
-                    # Make data JSON serializable (convert pandas Timestamps, etc.)
-                    serializable_data = make_json_serializable(final_mapped_data)
+                    # Make data JSON serializable (convert pandas Timestamps, etc.) with variable type context
+                    serializable_data = make_json_serializable_with_context(final_mapped_data, templates[0].variables)
                     
                     # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
                     if not isinstance(serializable_data, dict):

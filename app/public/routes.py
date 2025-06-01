@@ -4,18 +4,46 @@ from app.data_upload.service import DataUploadService
 from app.database import get_async_session
 from app.templates.service import TemplateService
 from app.utils import make_template_ready_with_context, render_template
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
+from fastapi.routing import APIRoute
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.routing import Match
 
-router = APIRouter(tags=["public"])
+
+class SafeHTMLRoute(APIRoute):
+    def matches(self, scope):
+        path: str = scope["path"]
+        for prefix in [
+            "/static",
+            "/favicon.ico",
+            "/robots.txt",
+            "/sitemap.xml",
+            "/health",
+            "/api",
+            "/auth",
+            "/users",
+            "/admin",
+            "/docs",
+            "/redoc",
+            "/templates"
+        ]:
+            if path.startswith(prefix):
+                return Match.NONE, {}
+        return super().matches(scope)
 
 
-@router.get("/{slug:path}/{identifier}", response_class=HTMLResponse)
-async def render_template_with_data(slug: str = Path(...), identifier: str = "", session: AsyncSession = Depends(get_async_session)):
+router = APIRouter(tags=["public"], route_class=SafeHTMLRoute)
+
+
+@router.get("/{full_path:path}", response_class=HTMLResponse)
+async def render_template_with_data(full_path: str, session: AsyncSession = Depends(get_async_session)):
     """Public endpoint to render templates with uploaded data."""
     template_service = TemplateService(session)
     data_service = DataUploadService(session)
+
+    *slugs, identifier = full_path.strip("/").split("/")
+    slug = "/".join(slugs)
 
     # Get template
     template = await template_service.get_template_by_slug(slug)

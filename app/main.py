@@ -81,9 +81,6 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Web frontend routes (must come before public router)
 app.include_router(web_router)
 
-# Public router last (has broad catch-all pattern)
-app.include_router(public_router)  # No prefix for public template rendering
-
 
 @app.get("/")
 async def root():
@@ -93,3 +90,6 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+# Public router last (has broad catch-all pattern)
+app.include_router(public_router)  # No prefix for public template rendering

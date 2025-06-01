@@ -18,6 +18,7 @@ class UploadJobRead(BaseModel):
     processed_rows: Optional[int] = None
     error_message: Optional[str] = None
     result_file_path: Optional[str] = None
+    failed_file_path: Optional[str] = None
     template_slugs: List[str]
     created_at: datetime
     completed_at: Optional[datetime] = None

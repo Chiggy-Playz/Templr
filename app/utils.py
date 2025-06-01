@@ -47,7 +47,9 @@ async def ensure_unique_identifier(
 
 def calculate_expiry_date() -> datetime:
     """Calculate expiry date (30 days from now)."""
-    return datetime.utcnow() + timedelta(days=30)
+    from datetime import timezone
+
+    return datetime.now(timezone.utc) + timedelta(days=30)
 
 
 def render_template(template_content: str, variables: Dict[str, Any]) -> str:
@@ -206,6 +208,45 @@ def make_json_serializable(data: Any, var_type: Union[str, None] = None) -> Any:
         return data
 
 
+def make_template_ready(data: Any, var_type: Union[str, None] = None) -> Any:
+    """
+    Convert data to template-ready format, preserving datetime objects for template use.
+    Similar to make_json_serializable but keeps datetime objects as datetime for Jinja2 templates.
+
+    NaN imputation rules:
+    - For string fields: empty string ""
+    - For numeric fields: -1
+    - For datetime fields: epoch start (1970-01-01T00:00:00)
+    """
+    # Handle NaN values first (they can come from pandas or numpy)
+    if _is_nan_value(data):
+        return _impute_nan_value(var_type)
+
+    if isinstance(data, dict):
+        return {key: make_template_ready(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [make_template_ready(item) for item in data]
+    elif hasattr(data, "to_pydatetime"):  # pandas Timestamp - convert to datetime
+        return data.to_pydatetime()
+    elif isinstance(data, (datetime, date)):  # Keep datetime/date objects as-is
+        return data
+    elif hasattr(data, "item"):  # numpy scalars
+        scalar_value = data.item()
+        # Check if the scalar value is NaN
+        if _is_nan_value(scalar_value):
+            return _impute_nan_value(var_type)
+        return scalar_value
+    elif str(type(data)).startswith("<class 'pandas"):  # Other pandas types
+        str_value = str(data)
+        # Handle pandas NaN string representation
+        if str_value in ("nan", "NaN", "<NA>"):
+            return _impute_nan_value(var_type)
+        return str_value
+    else:
+        # For basic types that are already template-ready
+        return data
+
+
 def _is_nan_value(data: Any) -> bool:
     """Check if a value is NaN in any form"""
     try:
@@ -215,13 +256,14 @@ def _is_nan_value(data: Any) -> bool:
         # Check for numpy NaN
         if hasattr(data, "__iter__") and not isinstance(data, (str, dict)):
             if np.isnan(data):
-                return True
-        # Check for pandas NA
+                return True  # Check for pandas NA
         try:
             import pandas as pd
 
-            if pd.isna(data):
-                return True
+            # Only check pandas.isna for supported types
+            if not isinstance(data, (dict, list)):
+                if pd.isna(data):
+                    return True
         except ImportError:
             pass
         return False
@@ -258,5 +300,25 @@ def make_json_serializable_with_context(row_data: Dict[str, Any], template_varia
     for key, value in row_data.items():
         var_type = var_type_lookup.get(key, None)
         result[key] = make_json_serializable(value, var_type)
+
+    return result
+
+
+def make_template_ready_with_context(row_data: Dict[str, Any], template_variables: list) -> Dict[str, Any]:
+    """
+    Convert row data to template-ready format with variable type context.
+    This version preserves datetime objects for template rendering.
+    """
+    # Create a lookup for variable types
+    var_type_lookup = {}
+    for var_def in template_variables:
+        var_name = var_def["name"]
+        var_type = var_def["type"]
+        var_type_lookup[var_name] = var_type
+
+    result = {}
+    for key, value in row_data.items():
+        var_type = var_type_lookup.get(key, None)
+        result[key] = make_template_ready(value, var_type)
 
     return result

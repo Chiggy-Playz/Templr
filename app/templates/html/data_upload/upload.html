@@ -156,16 +156,38 @@ block content %}
                     href="/api/data-upload/jobs/{{ job.id }}/download"
                     class="btn btn-sm btn-outline-success"
                   >
-                    <i class="bi bi-download"></i> Download
+                    <i class="bi bi-download"></i> Download Results
                   </a>
-                  {% elif job.status == 'failed' %}
+                  {% if job.failed_file_path %}
+                  <br /><small class="text-muted"
+                    >With {{ job.error_message.split(' failed
+                    rows')[0].split('Completed with ')[1] if job.error_message
+                    and 'failed rows' in job.error_message else '0' }} failed
+                    rows</small
+                  >
+                  <a
+                    href="/api/data-upload/jobs/{{ job.id }}/download-failed"
+                    class="btn btn-sm btn-outline-warning mt-1"
+                  >
+                    <i class="bi bi-exclamation-triangle"></i> Download Failed
+                    Rows
+                  </a>
+                  {% endif %} {% elif job.status == 'failed' %}
                   <button
                     class="btn btn-sm btn-outline-danger"
                     onclick="showError(`{{ job.error_message|e }}`)"
                   >
                     <i class="bi bi-exclamation-triangle"></i> Error
                   </button>
-                  {% elif job.status == 'processing' %}
+                  {% if job.failed_file_path %}
+                  <a
+                    href="/api/data-upload/jobs/{{ job.id }}/download-failed"
+                    class="btn btn-sm btn-outline-warning mt-1"
+                  >
+                    <i class="bi bi-exclamation-triangle"></i> Download Failed
+                    Rows
+                  </a>
+                  {% endif %} {% elif job.status == 'processing' %}
                   <button
                     class="btn btn-sm btn-outline-warning"
                     onclick="refreshJob('{{ job.id }}')"

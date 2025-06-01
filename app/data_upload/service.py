@@ -111,13 +111,17 @@ class DataUploadService:
 
                 job.total_rows = len(df)
                 await session.commit()
-                logger.info(f"Template validation passed. Processing {len(df)} rows")
-
-                # Process each row with error tracking
+                logger.info(
+                    f"Template validation passed. Processing {len(df)} rows"
+                )  # Process each row with error tracking
                 processed_data = []
                 data_columns = df.columns.tolist()
                 failed_rows = []
-                for index, (_, row) in enumerate(df.iterrows()):
+
+                # Preserve original row order by using reset_index to get explicit row numbers
+                df_with_index = df.reset_index(drop=True)
+
+                for index, (original_index, row) in enumerate(df_with_index.iterrows()):
                     row_data = {}  # Initialize to avoid unbound variable issues
                     try:
                         row_data = row.to_dict()
@@ -142,7 +146,9 @@ class DataUploadService:
 
                         # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
                         if not isinstance(serializable_data, dict):
-                            raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")                        # Generate unique identifier using mapped data
+                            raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")
+
+                        # Generate unique identifier using mapped data
                         identifier = await ensure_unique_identifier(session, serializable_data)
 
                         # Create uploaded data record with mapped data
@@ -155,8 +161,9 @@ class DataUploadService:
                         )
                         session.add(uploaded_data)
 
-                        # Add to processed data for result file
+                        # Add to processed data for result file with original row order preserved
                         processed_row = serializable_data.copy()
+                        processed_row["_original_row_index"] = original_index  # Track original position
 
                         # Add template URLs with domain
                         for template in templates:
@@ -164,34 +171,36 @@ class DataUploadService:
 
                         processed_data.append(processed_row)
 
-                        job.processed_rows = index + 1
-
-                        # Commit every 100 rows to avoid large transactions
+                        job.processed_rows = index + 1  # Commit every 100 rows to avoid large transactions
                         if (index + 1) % 100 == 0:
                             await session.commit()
                             logger.debug(f"Committed batch at row {index + 1}")
 
                     except Exception as row_error:
                         logger.warning(f"Failed to process row {index + 1}: {str(row_error)}")
-                        failed_rows.append(
-                            {
-                                "row": index + 1,
-                                "error": str(row_error),
-                                "data": str(row_data)[:200] + "..." if len(str(row_data)) > 200 else str(row_data),
-                            }
-                        )
 
-                        # If too many rows fail, abort the process
+                        # Create detailed failed row record with original data preserved
+                        failed_row_record = row_data.copy()  # Preserve all original column data
+                        failed_row_record["_row_number"] = index + 1
+                        failed_row_record["_original_row_index"] = original_index
+                        failed_row_record["_error_reason"] = str(row_error)
+                        failed_row_record["_error_type"] = type(row_error).__name__
+
+                        failed_rows.append(failed_row_record)  # If too many rows fail, abort the process
                         if len(failed_rows) > len(df) * 0.5:  # More than 50% failed
+                            # Get first few errors for summary
+                            sample_errors = [
+                                f"Row {row['_row_number']}: {row['_error_reason']}" for row in failed_rows[:3]
+                            ]
                             raise ValueError(
-                                f"Too many rows failed ({len(failed_rows)} out of {index + 1}). Sample errors: {failed_rows[:3]}"
+                                f"Too many rows failed ({len(failed_rows)} out of {index + 1}). Sample errors: {sample_errors}"
                             )
 
                 # Final commit for any remaining rows
                 await session.commit()
-                logger.info(f"All rows processed. Success: {len(processed_data)}, Failed: {len(failed_rows)}")
-
-                # Create result file
+                logger.info(
+                    f"All rows processed. Success: {len(processed_data)}, Failed: {len(failed_rows)}"
+                )  # Create result file
                 if processed_data:
                     result_df = pd.DataFrame(processed_data)
                     result_file_path = self.upload_dir / f"result_{job_id}.csv"
@@ -199,17 +208,32 @@ class DataUploadService:
                     logger.info(f"Result file created: {result_file_path}")
                 else:
                     result_file_path = None
-                    logger.warning("No data was successfully processed")
+                    logger.warning(
+                        "No data was successfully processed"
+                    )  # Create failed rows file if there are any failed rows
+                failed_file_path = None
+                if failed_rows:
+                    failed_df = pd.DataFrame(failed_rows)
+                    failed_file_path = self.upload_dir / f"failed_{job_id}.csv"
+                    failed_df.to_csv(failed_file_path, index=False)
+                    logger.info(f"Failed rows file created: {failed_file_path} with {len(failed_rows)} failed rows")
 
                 # Update job as completed
                 job.status = "completed"
                 job.result_file_path = str(result_file_path) if result_file_path else None
-                job.completed_at = datetime.utcnow()
+                job.failed_file_path = str(failed_file_path) if failed_file_path else None
+                from datetime import timezone
 
-                # Add summary of failed rows to error message if any
+                job.completed_at = datetime.now(timezone.utc)  # Add summary of failed rows to error message if any
                 if failed_rows:
+                    failed_file_name = f"failed_{job_id}.csv"
+                    sample_errors = [
+                        f"Row {row['_row_number']}: {row['_error_reason'][:100]}" for row in failed_rows[:3]
+                    ]
                     job.error_message = (
-                        f"Completed with {len(failed_rows)} failed rows. Sample errors: {failed_rows[:3]}"
+                        f"Completed with {len(failed_rows)} failed rows. "
+                        f"See '{failed_file_name}' for details. "
+                        f"Sample errors: {'; '.join(sample_errors)}"
                     )
 
                 await session.commit()
@@ -246,12 +270,12 @@ class DataUploadService:
             if job is not None and session is not None:
                 try:
                     # Rollback any pending transaction
-                    await session.rollback()
-
-                    # Update job status
+                    await session.rollback()  # Update job status
                     job.status = "failed"
                     job.error_message = error_msg
-                    job.completed_at = datetime.utcnow()
+                    from datetime import timezone
+
+                    job.completed_at = datetime.now(timezone.utc)
                     await session.commit()
                     logger.info(f"Job {job_id} marked as failed")
                 except Exception as commit_error:
@@ -297,10 +321,12 @@ class DataUploadService:
         result = await self.session.execute(select(UploadedData).where(UploadedData.identifier == identifier))
         data = result.scalar_one_or_none()
         if not data:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Data not found"
+            )  # Check if data has expired
+        from datetime import timezone
 
-        # Check if data has expired
-        if data.expires_at < datetime.utcnow():
+        if data.expires_at < datetime.now(timezone.utc):
             raise HTTPException(status_code=status.HTTP_410_GONE, detail="Data has expired")
 
         return data

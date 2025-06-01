@@ -120,10 +120,19 @@ block content %}
             <a
               href="/api/data-upload/download/{{ upload.id }}"
               class="btn btn-sm btn-outline-success"
+              title="Download Results"
             >
               <i class="bi bi-download"></i>
             </a>
-            {% endif %}
+            {% if upload.failed_file_path %}
+            <a
+              href="/api/data-upload/download-failed/{{ upload.id }}"
+              class="btn btn-sm btn-outline-warning ms-1"
+              title="Download Failed Rows"
+            >
+              <i class="bi bi-exclamation-triangle"></i>
+            </a>
+            {% endif %} {% endif %}
           </div>
           {% endfor %}
         </div>

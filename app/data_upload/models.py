@@ -39,6 +39,7 @@ class UploadJob(Base):
     processed_rows: Mapped[Optional[int]] = mapped_column(nullable=True, default=0)
     error_message: Mapped[Optional[str]] = mapped_column(nullable=True)
     result_file_path: Mapped[Optional[str]] = mapped_column(String(length=500), nullable=True)
+    failed_file_path: Mapped[Optional[str]] = mapped_column(String(length=500), nullable=True)
     template_slugs: Mapped[list] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

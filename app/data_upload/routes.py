@@ -99,6 +99,47 @@ async def download_result_file_public(job_id: uuid.UUID, session: AsyncSession =
     return FileResponse(path=str(result_file_path), filename=f"processed_results_{job_id}.csv", media_type="text/csv")
 
 
+@router.get("/jobs/{job_id}/download-failed")
+async def download_failed_rows_file(
+    job_id: uuid.UUID,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    service = DataUploadService(session)
+    try:
+        job = await service.get_upload_job(job_id, current_user)
+    except HTTPException as e:
+        print(f"Failed to get upload job {job_id} for user {current_user.id}: {e.detail}")
+        raise e
+
+    if not job.failed_file_path:
+        raise HTTPException(status_code=404, detail="Failed rows file not available")
+
+    # Generate CSV filename for failed rows
+    import os
+
+    original_name = os.path.splitext(job.filename)[0]
+    csv_filename = f"failed_rows_{original_name}.csv"
+
+    return FileResponse(path=job.failed_file_path, filename=csv_filename, media_type="text/csv")
+
+
+@router.get("/download-failed/{job_id}")
+async def download_failed_rows_public(job_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
+    """Public download endpoint for failed rows files - no authentication required"""
+    import os
+    from pathlib import Path
+
+    # Construct the expected failed file path
+    upload_dir = Path("uploads")
+    failed_file_path = upload_dir / f"failed_{job_id}.csv"
+
+    if not failed_file_path.exists():
+        raise HTTPException(status_code=404, detail="Failed rows file not found")
+
+    return FileResponse(path=str(failed_file_path), filename=f"failed_rows_{job_id}.csv", media_type="text/csv")
+
+
 @router.get("/data/{identifier}", response_model=UploadedDataRead)
 async def get_uploaded_data(identifier: str, session: AsyncSession = Depends(get_async_session)):
     service = DataUploadService(session)

@@ -172,7 +172,7 @@ class DataUploadService:
                         processed_data.append(processed_row)
 
                         job.processed_rows = index + 1  # Commit every 100 rows to avoid large transactions
-                        if (index + 1) % 100 == 0:
+                        if (index + 1) % 1000 == 0:
                             await session.commit()
                             logger.debug(f"Committed batch at row {index + 1}")
 

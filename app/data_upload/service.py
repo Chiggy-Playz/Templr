@@ -16,6 +16,8 @@ from app.users.models import User
 from app.utils import (
     calculate_expiry_date,
     ensure_unique_identifier,
+    generate_unique_identifier_from_set,
+    get_existing_identifiers,
     make_json_serializable_with_context,
     map_data_row,
     validate_data_types,
@@ -100,9 +102,9 @@ class DataUploadService:
                 else:
                     raise ValueError(f"Unsupported file format: {file_path.suffix}")
 
-                logger.info(f"File read successfully. Rows: {len(df)}, Columns: {list(df.columns)}")
-
-                # Validate headers against all templates
+                logger.info(
+                    f"File read successfully. Rows: {len(df)}, Columns: {list(df.columns)}"
+                )  # Validate headers against all templates
                 for template in templates:
                     logger.debug(f"Validating template {template.slug} against data columns")
                     is_valid, error_msg = validate_template_variables(template.variables, df.columns.tolist())
@@ -111,9 +113,13 @@ class DataUploadService:
 
                 job.total_rows = len(df)
                 await session.commit()
-                logger.info(
-                    f"Template validation passed. Processing {len(df)} rows"
-                )  # Process each row with error tracking
+                logger.info(f"Template validation passed. Processing {len(df)} rows")
+                # Fetch all existing identifiers upfront for fast lookup optimization
+                existing_identifiers = await get_existing_identifiers(session)
+                logger.info(f"Loaded {len(existing_identifiers)} existing identifiers for fast lookup")
+                logger.info(f"Loaded {len(existing_identifiers)} existing identifiers for fast lookup")
+
+                # Process each row with error tracking
                 processed_data = []
                 data_columns = df.columns.tolist()
                 failed_rows = []
@@ -146,10 +152,10 @@ class DataUploadService:
 
                         # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
                         if not isinstance(serializable_data, dict):
-                            raise ValueError(f"Expected dict after serialization, got {type(serializable_data)}")
-
-                        # Generate unique identifier using mapped data
-                        identifier = await ensure_unique_identifier(session, serializable_data)
+                            raise ValueError(
+                                f"Expected dict after serialization, got {type(serializable_data)}"
+                            )  # Generate unique identifier using mapped data
+                        identifier = generate_unique_identifier_from_set(serializable_data, existing_identifiers)
 
                         # Create uploaded data record with mapped data
                         uploaded_data = UploadedData(

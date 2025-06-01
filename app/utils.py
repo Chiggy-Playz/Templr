@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def generate_unique_identifier(data: Dict[str, Any], min_length: int = 8) -> str:
+def generate_unique_identifier(data: Dict[str, Any], min_length: int = 6) -> str:
     """Generate a unique identifier based on data content."""
     # Create a hash from the data
     data_str = str(sorted(data.items()))
@@ -25,24 +25,52 @@ def generate_unique_identifier(data: Dict[str, Any], min_length: int = 8) -> str
     return hex_hash[:min_length]
 
 
-async def ensure_unique_identifier(
-    session: AsyncSession, data: Dict[str, Any], min_length: int = 8, max_length: int = 32
+async def get_existing_identifiers(session: AsyncSession) -> set:
+    """Fetch all existing identifiers from the database for fast lookup."""
+    result = await session.execute(select(UploadedData.identifier))
+    identifiers = result.scalars().all()
+    return set(identifiers)
+
+
+def generate_unique_identifier_from_set(
+    data: Dict[str, Any], existing_identifiers: set, min_length: int = 6, max_length: int = 32
 ) -> str:
-    """Ensure the identifier is unique in the database."""
+    """Generate a unique identifier that doesn't exist in the provided set."""
     for length in range(min_length, max_length + 1):
         identifier = generate_unique_identifier(data, length)
 
-        # Check if identifier already exists
-        result = await session.execute(select(UploadedData).where(UploadedData.identifier == identifier))
-        existing = result.scalar_one_or_none()
-
-        if not existing:
+        if identifier not in existing_identifiers:
+            # Add to set to keep it up to date
+            existing_identifiers.add(identifier)
             return identifier
 
     # If we can't find a unique identifier, add random suffix
     base_identifier = generate_unique_identifier(data, max_length - 4)
-    random_suffix = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-    return f"{base_identifier}{random_suffix}"
+
+    # Keep trying with random suffixes until we find a unique one
+    for _ in range(100):  # Limit attempts to avoid infinite loop
+        random_suffix = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+        identifier = f"{base_identifier}{random_suffix}"
+
+        if identifier not in existing_identifiers:
+            existing_identifiers.add(identifier)
+            return identifier
+
+    # If all else fails, use timestamp-based suffix
+    import time
+
+    timestamp_suffix = str(int(time.time() * 1000))[-4:]
+    identifier = f"{base_identifier}{timestamp_suffix}"
+    existing_identifiers.add(identifier)
+    return identifier
+
+
+async def ensure_unique_identifier(
+    session: AsyncSession, data: Dict[str, Any], min_length: int =6, max_length: int = 32
+) -> str:
+    """Ensure the identifier is unique in the database."""
+    existing_identifiers = await get_existing_identifiers(session)
+    return generate_unique_identifier_from_set(data, existing_identifiers, min_length, max_length)
 
 
 def calculate_expiry_date() -> datetime:

@@ -8,6 +8,7 @@ class VariableDefinition(BaseModel):
     name: str = Field(..., description="Variable name")
     type: str = Field(..., description="Variable type: string, number, or date")
     required: bool = Field(default=True, description="Whether this variable is required")
+    aliases: List[str] = Field(default_factory=list, description="Alternative names for this variable")
 
 
 class TemplateBase(BaseModel):

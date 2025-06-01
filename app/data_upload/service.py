@@ -15,6 +15,7 @@ from app.utils import (
     ensure_unique_identifier,
     validate_data_types,
     validate_template_variables,
+    map_data_row,
 )
 from fastapi import HTTPException, UploadFile, status
 import pandas as pd
@@ -63,6 +64,7 @@ class DataUploadService:
     async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: List):
         """Background task to process uploaded data."""
         async with async_session_maker() as session:
+            job = None
             try:
                 # Get job
                 result = await session.execute(select(UploadJob).where(UploadJob.id == job_id))
@@ -91,22 +93,31 @@ class DataUploadService:
 
                 # Process each row
                 processed_data = []
+                data_columns = df.columns.tolist()
+                
                 for index, (_, row) in enumerate(df.iterrows()):
                     row_data = row.to_dict()
 
-                    # Validate data types against all templates
+                    # Map data columns to template variables for each template
                     for template in templates:
-                        is_valid, error_msg = validate_data_types(row_data, template.variables)
+                        # Map the row data to template variable names
+                        mapped_data = map_data_row(row_data, template.variables, data_columns)
+                        
+                        # Validate data types against template variables
+                        is_valid, error_msg = validate_data_types(mapped_data, template.variables)
                         if not is_valid:
                             raise ValueError(f"Row {index + 1}, Template '{template.slug}': {error_msg}")
 
-                    # Generate unique identifier
-                    identifier = await ensure_unique_identifier(session, row_data)
+                    # Use the mapped data for the first template (they should all have the same mapping)
+                    final_mapped_data = map_data_row(row_data, templates[0].variables, data_columns)
 
-                    # Create uploaded data record
+                    # Generate unique identifier using mapped data
+                    identifier = await ensure_unique_identifier(session, final_mapped_data)
+
+                    # Create uploaded data record with mapped data
                     uploaded_data = UploadedData(
                         identifier=identifier,
-                        payload=row_data,
+                        payload=final_mapped_data,  # Store the mapped data
                         template_slugs=job.template_slugs,
                         expires_at=calculate_expiry_date(),
                         owner_id=job.owner_id,
@@ -114,7 +125,7 @@ class DataUploadService:
                     session.add(uploaded_data)
 
                     # Add to processed data for result file
-                    processed_row = row_data.copy()
+                    processed_row = final_mapped_data.copy()
                     processed_row["unique_identifier"] = identifier
 
                     # Add template URLs
@@ -142,11 +153,12 @@ class DataUploadService:
                 file_path.unlink()
 
             except Exception as e:
-                # Update job as failed
-                job.status = "failed"
-                job.error_message = str(e)
-                job.completed_at = datetime.utcnow()
-                await session.commit()
+                # Update job as failed (if job was retrieved)
+                if job is not None:
+                    job.status = "failed"
+                    job.error_message = str(e)
+                    job.completed_at = datetime.utcnow()
+                    await session.commit()
 
                 # Clean up files
                 if file_path.exists():

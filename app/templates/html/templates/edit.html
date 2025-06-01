@@ -137,28 +137,40 @@
 <script>
   let variableCount = 0;
   const templateVariables = {{ template.variables | tojson }};
-
   function addVariable(varData = null) {
       const container = document.getElementById('variables-container');
       const variableDiv = document.createElement('div');
-      variableDiv.className = 'mb-3 variable-item';
+      variableDiv.className = 'mb-3 variable-item border p-3 rounded';
+      
+      const aliases = varData && varData.aliases && Array.isArray(varData.aliases) ? varData.aliases.join(', ') : '';
+      
       variableDiv.innerHTML = `
-          <div class="row">
+          <div class="row mb-2">
               <div class="col-6">
-                  <input type="text" class="form-control form-control-sm" placeholder="Variable name"
+                  <label class="form-label small">Variable Name</label>
+                  <input type="text" class="form-control form-control-sm" placeholder="e.g., outstandingamount"
                          name="var_name_${variableCount}" value="${varData ? varData.name : ''}">
               </div>
               <div class="col-4">
+                  <label class="form-label small">Type</label>
                   <select class="form-select form-select-sm" name="var_type_${variableCount}">
                       <option value="string" ${varData && varData.type === 'string' ? 'selected' : ''}>String</option>
                       <option value="number" ${varData && varData.type === 'number' ? 'selected' : ''}>Number</option>
                       <option value="date" ${varData && varData.type === 'date' ? 'selected' : ''}>Date</option>
                   </select>
               </div>
-              <div class="col-2">
+              <div class="col-2 d-flex align-items-end">
                   <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeVariable(this)">
                       <i class="bi bi-trash"></i>
                   </button>
+              </div>
+          </div>
+          <div class="row">
+              <div class="col-12">
+                  <label class="form-label small">Aliases <span class="text-muted">(optional - comma separated)</span></label>
+                  <input type="text" class="form-control form-control-sm" placeholder="e.g., Outstanding_amount, outstanding-amount, OutstandingAmount"
+                         name="var_aliases_${variableCount}" value="${aliases}">
+                  <div class="form-text small">Alternative names for this variable that can appear in CSV headers</div>
               </div>
           </div>
       `;
@@ -184,19 +196,23 @@
       e.preventDefault();
 
       const formData = new FormData(e.target);
-      const variables = [];
-
-      // Collect variables
+      const variables = [];      // Collect variables
       const variableItems = document.querySelectorAll('.variable-item');
       variableItems.forEach((item, index) => {
           const nameInput = item.querySelector(`input[name^="var_name_"]`);
           const typeSelect = item.querySelector(`select[name^="var_type_"]`);
+          const aliasesInput = item.querySelector(`input[name^="var_aliases_"]`);
 
           if (nameInput && nameInput.value.trim()) {
+              const aliases = aliasesInput && aliasesInput.value.trim() 
+                ? aliasesInput.value.split(',').map(alias => alias.trim()).filter(alias => alias)
+                : [];
+              
               variables.push({
                   name: nameInput.value.trim(),
                   type: typeSelect.value,
-                  required: true
+                  required: true,
+                  aliases: aliases
               });
           }
       });

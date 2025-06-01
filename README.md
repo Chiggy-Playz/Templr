@@ -7,6 +7,7 @@ A FastAPI web application for managing templates and data uploads with dynamic r
 - **Authentication System**: FastAPI-Users based authentication (no registration, admin creates users)
 - **User Management**: Super admin can create, delete, and manage users
 - **Template Management**: Create, edit, and delete templates with variable definitions
+- **Variable Aliases**: Support for case-insensitive variable matching and alias names
 - **Data Upload**: Upload CSV/Excel files with background processing and validation
 - **Dynamic Rendering**: Public URLs for rendering templates with uploaded data
 - **Data Expiration**: Automatic 30-day data expiration
@@ -80,6 +81,16 @@ Where:
 
 - `slug`: Template URL slug
 - `identifier`: Unique data row identifier
+
+### Variable Matching and Aliases
+
+The system supports flexible variable matching:
+
+- **Case-Insensitive Matching**: Template variables match CSV columns regardless of case
+- **Alias Support**: Define multiple alternative names for each variable
+- **Example**: Variable `outstandingamount` with aliases `Outstanding_amount, outstanding-amount` will match any of these CSV column names
+
+See [VARIABLE_MAPPING.md](VARIABLE_MAPPING.md) for detailed documentation.
 
 ## Project Structure
 

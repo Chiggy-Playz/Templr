@@ -1,0 +1,6 @@
+Name,Email,Outstanding_amount,Date_due
+John Doe,john@example.com,100.5,2024-06-15
+,jane@example.com,200.75,2024-07-20
+Jane Smith,not-an-email,not-a-number,2024-08-25
+,bob@example.com,300.0,not-a-date
+Bob Wilson,alice@example.com,-50.25,2024-09-30

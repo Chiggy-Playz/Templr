@@ -17,7 +17,6 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     username: Mapped[str] = mapped_column(String(length=100), unique=True, index=True, nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(String(length=100), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(length=100), nullable=True)
-    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Relationships
     templates: Mapped[List["Template"]] = relationship("Template", back_populates="owner")

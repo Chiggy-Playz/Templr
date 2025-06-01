@@ -66,10 +66,9 @@ app.include_router(
 )
 
 # Application routes
-app.include_router(templates_router, prefix="/api")
+app.include_router(templates_router, prefix="/api/templates")
 app.include_router(data_upload_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
-app.include_router(public_router)  # No prefix for public template rendering
 
 # Static files and web routes (add after CORS middleware)
 # Create static directory if it doesn't exist
@@ -79,8 +78,11 @@ static_dir.mkdir(exist_ok=True)
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Web frontend routes
+# Web frontend routes (must come before public router)
 app.include_router(web_router)
+
+# Public router last (has broad catch-all pattern)
+app.include_router(public_router)  # No prefix for public template rendering
 
 
 @app.get("/")

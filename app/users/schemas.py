@@ -15,7 +15,6 @@ class UserCreate(schemas.BaseUserCreate):
     username: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    is_superuser: bool = False
 
 
 class UserUpdate(schemas.BaseUserUpdate):

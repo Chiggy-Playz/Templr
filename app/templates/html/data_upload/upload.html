@@ -161,7 +161,7 @@ block content %}
                   {% elif job.status == 'failed' %}
                   <button
                     class="btn btn-sm btn-outline-danger"
-                    onclick="showError('{{ job.error_message }}')"
+                    onclick="showError(`{{ job.error_message|e }}`)"
                   >
                     <i class="bi bi-exclamation-triangle"></i> Error
                   </button>
@@ -198,18 +198,15 @@ block content %}
       if (templateSlugs.length === 0) {
         showAlert("Please select at least one template", "warning");
         return;
-      }
-
-      // Add template slugs to form data
-      templateSlugs.forEach((slug) => formData.append("template_slugs", slug));
+      } // Add template slugs to form data as JSON string
+      formData.append("template_slugs", JSON.stringify(templateSlugs));
 
       try {
         const submitButton = e.target.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.innerHTML =
           '<i class="bi bi-arrow-clockwise"></i> Uploading...';
-
-        const response = await fetch("/api/data-upload/upload", {
+        const response = await fetch("/api/data-upload/", {
           method: "POST",
           body: formData,
           credentials: "include",
@@ -235,9 +232,8 @@ block content %}
           '<i class="bi bi-upload"></i> Upload and Process';
       }
     });
-
   function showError(message) {
-    alert(message);
+    showAlert(message, "danger");
   }
 
   async function refreshJob(jobId) {

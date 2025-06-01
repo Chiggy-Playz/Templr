@@ -4,15 +4,15 @@ from app.data_upload.service import DataUploadService
 from app.database import get_async_session
 from app.templates.service import TemplateService
 from app.utils import make_template_ready_with_context, render_template
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Path
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["public"])
 
 
-@router.get("/{slug}/{identifier}", response_class=HTMLResponse)
-async def render_template_with_data(slug: str, identifier: str, session: AsyncSession = Depends(get_async_session)):
+@router.get("/{slug:path}/{identifier}", response_class=HTMLResponse)
+async def render_template_with_data(slug: str = Path(...), identifier: str = "", session: AsyncSession = Depends(get_async_session)):
     """Public endpoint to render templates with uploaded data."""
     template_service = TemplateService(session)
     data_service = DataUploadService(session)

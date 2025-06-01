@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 import uuid
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class VariableDefinition(BaseModel):
@@ -14,9 +14,18 @@ class VariableDefinition(BaseModel):
 class TemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
-    slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_-]+$")
+    slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_/-]+$")
     content: str = Field(..., min_length=1)
     variables: List[VariableDefinition] = Field(default_factory=list)
+    
+    @field_validator('slug')
+    @classmethod
+    def validate_slug(cls, v: str) -> str:
+        if v.endswith('/'):
+            raise ValueError('Slug cannot end with a forward slash')
+        if v.startswith('/'):
+            raise ValueError('Slug cannot start with a forward slash')
+        return v
 
 
 class TemplateCreate(TemplateBase):
@@ -26,9 +35,20 @@ class TemplateCreate(TemplateBase):
 class TemplateUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
-    slug: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_-]+$")
+    slug: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_/-]+$")
     content: Optional[str] = Field(None, min_length=1)
     variables: Optional[List[VariableDefinition]] = None
+    
+    @field_validator('slug')
+    @classmethod
+    def validate_slug(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if v.endswith('/'):
+            raise ValueError('Slug cannot end with a forward slash')
+        if v.startswith('/'):
+            raise ValueError('Slug cannot start with a forward slash')
+        return v
 
 
 class TemplateRead(TemplateBase):

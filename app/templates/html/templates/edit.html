@@ -42,9 +42,8 @@
                 required
               />
               <span class="input-group-text">/[identifier]</span>
-            </div>
-            <div class="form-text">
-              Only letters, numbers, hyphens, and underscores allowed
+            </div>            <div class="form-text">
+              Letters, numbers, hyphens, underscores, and forward slashes allowed (e.g., ABCD/DEF). Cannot end with slash.
             </div>
           </div>
 
@@ -233,14 +232,26 @@
               },
               body: JSON.stringify(templateData),
               credentials: 'include'
-          });
-
-          if (response.ok) {
+          });          if (response.ok) {
               showAlert('Template updated successfully', 'success');
               setTimeout(() => window.location.href = '/templates', 1000);
           } else {
               const error = await response.json();
-              showAlert(error.detail || 'Failed to update template', 'danger');
+              let errorMessage = 'Failed to update template';
+              
+              if (error.detail) {
+                  if (typeof error.detail === 'string') {
+                      errorMessage = error.detail;
+                  } else if (Array.isArray(error.detail)) {
+                      // Handle validation errors array
+                      errorMessage = error.detail.map(err => err.msg || err).join(', ');
+                  } else if (typeof error.detail === 'object') {
+                      // Handle validation errors object
+                      errorMessage = JSON.stringify(error.detail);
+                  }
+              }
+              
+              showAlert(errorMessage, 'danger');
           }
       } catch (error) {
           showAlert('Failed to update template', 'danger');
@@ -253,14 +264,26 @@
               const response = await fetch(`/api/templates/{{ template.id }}`, {
                   method: 'DELETE',
                   credentials: 'include'
-              });
-
-              if (response.ok) {
+              });              if (response.ok) {
                   showAlert('Template deleted successfully', 'success');
                   setTimeout(() => window.location.href = '/templates', 1000);
               } else {
                   const error = await response.json();
-                  showAlert(error.detail || 'Failed to delete template', 'danger');
+                  let errorMessage = 'Failed to delete template';
+                  
+                  if (error.detail) {
+                      if (typeof error.detail === 'string') {
+                          errorMessage = error.detail;
+                      } else if (Array.isArray(error.detail)) {
+                          // Handle validation errors array
+                          errorMessage = error.detail.map(err => err.msg || err).join(', ');
+                      } else if (typeof error.detail === 'object') {
+                          // Handle validation errors object
+                          errorMessage = JSON.stringify(error.detail);
+                      }
+                  }
+                  
+                  showAlert(errorMessage, 'danger');
               }
           } catch (error) {
               showAlert('Failed to delete template', 'danger');

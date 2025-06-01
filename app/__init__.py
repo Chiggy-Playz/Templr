@@ -1,1 +1,1 @@
-"""Main application module."""
+# FastAPI Templr Application

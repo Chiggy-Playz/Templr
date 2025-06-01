@@ -1,0 +1,67 @@
+{% extends "base.html" %} {% block title %}Login - Templr{% endblock %} {% block
+content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <div class="card mt-5">
+      <div class="card-header text-center">
+        <h3><i class="bi bi-file-earmark-text"></i> Templr</h3>
+        <p class="text-muted">Sign in to your account</p>
+      </div>
+      <div class="card-body">
+        <form id="loginForm">
+          <div class="mb-3">
+            <label for="username" class="form-label">Email</label>
+            <input
+              type="email"
+              class="form-control"
+              id="username"
+              name="username"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              name="password"
+              required
+            />
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">Sign In</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("username", document.getElementById("username").value);
+    formData.append("password", document.getElementById("password").value);
+
+    try {
+      const response = await fetch("/auth/jwt/login", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        window.location.href = "/dashboard";
+      } else {
+        const error = await response.json();
+        showAlert(error.detail || "Login failed", "danger");
+      }
+    } catch (error) {
+      showAlert("Login failed. Please try again.", "danger");
+    }
+  });
+</script>
+{% endblock %}

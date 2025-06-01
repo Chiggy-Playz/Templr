@@ -1,0 +1,238 @@
+{% extends "base.html" %} {% block title %}Profile - Templr{% endblock %} {%
+block content %}
+<div
+  class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+>
+  <h1 class="h2">My Profile</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Profile Information</h5>
+      </div>
+      <div class="card-body">
+        <form id="profileForm">
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              name="email"
+              value="{{ user.email }}"
+              readonly
+            />
+            <div class="form-text">Email cannot be changed</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input
+              type="text"
+              class="form-control"
+              id="username"
+              name="username"
+              value="{{ user.username }}"
+              required
+            />
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="first_name" class="form-label">First Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="first_name"
+                  name="first_name"
+                  value="{{ user.first_name or '' }}"
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="last_name" class="form-label">Last Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="last_name"
+                  name="last_name"
+                  value="{{ user.last_name or '' }}"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check"></i> Update Profile
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5>Change Password</h5>
+      </div>
+      <div class="card-body">
+        <form id="passwordForm">
+          <div class="mb-3">
+            <label for="current_password" class="form-label"
+              >Current Password</label
+            >
+            <input
+              type="password"
+              class="form-control"
+              id="current_password"
+              name="current_password"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="new_password" class="form-label">New Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="new_password"
+              name="new_password"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="confirm_password" class="form-label"
+              >Confirm New Password</label
+            >
+            <input
+              type="password"
+              class="form-control"
+              id="confirm_password"
+              name="confirm_password"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-key"></i> Change Password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6>Account Details</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <strong>Role:</strong>
+          <span
+            class="badge bg-{% if user.is_superuser %}danger{% else %}primary{% endif %}"
+          >
+            {% if user.is_superuser %}Super Admin{% else %}User{% endif %}
+          </span>
+        </div>
+
+        <div class="mb-2">
+          <strong>Status:</strong>
+          <span
+            class="badge bg-{% if user.is_active %}success{% else %}secondary{% endif %}"
+          >
+            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </div>
+
+        <div class="mb-2">
+          <strong>Member Since:</strong>
+          <br /><small class="text-muted"
+            >{{ user.created_at.strftime('%B %d, %Y') if user.created_at else
+            'Unknown' }}</small
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document
+    .getElementById("profileForm")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const profileData = {
+        username: formData.get("username"),
+        first_name: formData.get("first_name"),
+        last_name: formData.get("last_name"),
+      };
+
+      try {
+        const response = await fetch("/api/users/me", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(profileData),
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          showAlert("Profile updated successfully", "success");
+        } else {
+          const error = await response.json();
+          showAlert(error.detail || "Failed to update profile", "danger");
+        }
+      } catch (error) {
+        showAlert("Failed to update profile", "danger");
+      }
+    });
+
+  document
+    .getElementById("passwordForm")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const newPassword = formData.get("new_password");
+      const confirmPassword = formData.get("confirm_password");
+
+      if (newPassword !== confirmPassword) {
+        showAlert("New passwords do not match", "danger");
+        return;
+      }
+
+      const passwordData = {
+        password: formData.get("current_password"),
+        new_password: newPassword,
+      };
+
+      try {
+        const response = await fetch("/auth/reset-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(passwordData),
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          showAlert("Password changed successfully", "success");
+          e.target.reset();
+        } else {
+          const error = await response.json();
+          showAlert(error.detail || "Failed to change password", "danger");
+        }
+      } catch (error) {
+        showAlert("Failed to change password", "danger");
+      }
+    });
+</script>
+{% endblock %}

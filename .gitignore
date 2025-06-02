@@ -11,4 +11,5 @@ wheels/
 uploads/
 logs/
 *.logs
+*.log
 *.env

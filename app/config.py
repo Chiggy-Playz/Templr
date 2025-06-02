@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     debug: bool = True
     domain: str = "http://localhost:8000"
 
+    host: str = "127.0.0.1"
+    port: int = 8000
+    log_level: str = "INFO"
+    workers: int = 1
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

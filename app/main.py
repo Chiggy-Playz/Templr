@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
+import logging
 from pathlib import Path
 
 from app.auth.config import auth_backend, fastapi_users
 from app.data_upload.routes import router as data_upload_router
 from app.database import create_db_and_tables
+from app.logging_config import setup_logging
 from app.public.routes import router as public_router
 from app.templates.routes import router as templates_router
 from app.users.models import User
@@ -16,12 +18,20 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+# Initialize logging before anything else
+setup_logging()
+
+log = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    log.info("Starting Templr application...")
     # Create database tables
     await create_db_and_tables()
+    log.info("Database tables created/verified")
     yield
+    log.info("Shutting down Templr application...")
 
 
 app = FastAPI(
@@ -36,6 +46,8 @@ app = FastAPI(
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions, specifically redirecting 401 to login page."""
+    log.warning(f"HTTP Exception {exc.status_code}: {exc.detail} - URL: {request.url}")
+
     if exc.status_code == 401:
         # Check if this is an API request (JSON response expected)
         accept_header = request.headers.get("accept", "")
@@ -43,8 +55,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
         # If it's an API request, return JSON response
         if "application/json" in accept_header or "application/json" in content_type:
-            from fastapi.responses import JSONResponse
-
             return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         # For web requests, redirect to login

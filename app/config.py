@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     workers: int = 1
 
+    superuser_username: str = "admin"
+    superuser_email: str = "admin@templr.com"
+    superuser_password: str = "admin123"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

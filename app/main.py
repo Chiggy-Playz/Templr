@@ -4,7 +4,6 @@ from pathlib import Path
 
 from app.auth.config import auth_backend, fastapi_users
 from app.data_upload.routes import router as data_upload_router
-from app.database import create_db_and_tables
 from app.logging_config import setup_logging
 from app.public.routes import router as public_router
 from app.templates.routes import router as templates_router
@@ -27,9 +26,6 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("Starting Templr application...")
-    # Create database tables
-    await create_db_and_tables()
-    log.info("Database tables created/verified")
     yield
     log.info("Shutting down Templr application...")
 

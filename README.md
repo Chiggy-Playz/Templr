@@ -2,6 +2,8 @@
 
 A FastAPI web application for managing templates and data uploads with dynamic rendering capabilities.
 
+> **Note ⚠️ :** This project was completely vibe coded. I have no idea how it works, but it does work. Use at your own risk. And don't blame me for the code.
+
 ## Features
 
 - **Authentication System**: FastAPI-Users based authentication (no registration, admin creates users)
@@ -39,7 +41,7 @@ A FastAPI web application for managing templates and data uploads with dynamic r
 3. **Initialize database**:
 
    ```bash
-   python init_db.py
+   uv run alembic upgrade head
    ```
 
 4. **Run the application**:
@@ -56,7 +58,7 @@ Visit `http://localhost:8000/docs` for interactive API documentation.
 - **Email**: admin@templr.com
 - **Password**: admin123
 
-⚠️ **Change the default password immediately in production!**
+⚠️ **Change the username, email and password before starting the app using .env, as its not possible to change them afterwards**
 
 ## Usage
 

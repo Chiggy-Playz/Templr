@@ -3,14 +3,12 @@ version: "3.8"
 services:
   app:
     container_name: templr
-    build: .
+    image: ghcr.io/chiggy-playz/templr:latest
     ports:
       - "8000:8000"
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
-    environment:
-      - PYTHONUNBUFFERED=1
     env_file: .env
     restart: unless-stopped
     healthcheck:

@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 from app.auth.config import auth_backend, fastapi_users
+from app.config import settings
 from app.data_upload.routes import router as data_upload_router
 from app.logging_config import setup_logging
 from app.public.routes import router as public_router
@@ -33,6 +34,8 @@ app = FastAPI(
     description="A FastAPI application for managing templates and data uploads with dynamic rendering",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
 )
 
 
@@ -49,9 +52,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
         # If it's an API request, return JSON response
         if "application/json" in accept_header or "application/json" in content_type:
-            return JSONResponse(
-                status_code=401, content={"detail": "Authentication required"}
-            )
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         # For web requests, redirect to login
         return RedirectResponse(url="/login", status_code=302)

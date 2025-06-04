@@ -20,7 +20,7 @@ def setup_logging(
     log_dir: str = "logs",
     max_bytes: int = 128 * 1024 * 1024,  # 128MB
     backup_count: int = 14,  # 14 backups
-    enable_console: bool | None = None,
+    enable_console: bool | None = True,
 ) -> None:
     """
     Setup logging configuration for the application.

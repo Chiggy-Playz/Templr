@@ -93,7 +93,7 @@ async def test_failed_rows_functionality():
             print(f"Using template: {template.slug}")
 
             # Process the file directly using the service logic
-            data_service = DataUploadService(session)
+            # data_service = DataUploadService(session)
 
             # Read the file
             df = pd.read_csv(test_file_path)
@@ -152,7 +152,7 @@ async def test_failed_rows_functionality():
 
                     failed_rows.append(failed_row_record)
 
-            print(f"\nProcessing summary:")
+            print("\nProcessing summary:")
             print(f"Input rows: {len(df)}")
             print(f"Successfully processed: {len(processed_data)}")
             print(f"Failed rows: {len(failed_rows)}")
@@ -169,7 +169,7 @@ async def test_failed_rows_functionality():
                 failed_file = Path("tests/data/test_failed_rows.csv")
                 failed_df.to_csv(failed_file, index=False)
                 print(f"✓ Failed rows file saved: {failed_file}")
-                print(f"\nFailed rows details:")
+                print("\nFailed rows details:")
                 print(failed_df[["_row_number", "_error_reason", "name", "email", "Outstanding_amount", "Date_due"]])
             else:
                 print("No failed rows to save")

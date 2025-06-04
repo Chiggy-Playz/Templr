@@ -1,4 +1,3 @@
-from typing import Optional
 import uuid
 
 from app.auth.config import fastapi_users
@@ -6,7 +5,7 @@ from app.data_upload.service import DataUploadService
 from app.database import get_async_session
 from app.templates.service import TemplateService
 from app.users.models import User
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,14 +18,14 @@ current_user = fastapi_users.current_user(optional=True)
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request, user: Optional[User] = Depends(current_user)):
+async def home(request: Request, user: User | None = Depends(current_user)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
     return RedirectResponse(url="/dashboard", status_code=302)
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, user: Optional[User] = Depends(current_user)):
+async def login_page(request: Request, user: User | None = Depends(current_user)):
     if user:
         return RedirectResponse(url="/dashboard", status_code=302)
     return templates.TemplateResponse("auth/login.html", {"request": request})

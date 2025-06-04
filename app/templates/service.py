@@ -1,4 +1,3 @@
-from typing import List, Optional, Sequence
 import uuid
 
 from app.templates.models import Template
@@ -28,7 +27,7 @@ class TemplateService:
         await self.session.refresh(template)
         return template
 
-    async def get_templates(self, owner: User, skip: int = 0, limit: int = 100) -> List[Template]:
+    async def get_templates(self, owner: User, skip: int = 0, limit: int = 100) -> list[Template]:
         result = await self.session.execute(
             select(Template)
             .where(Template.owner_id == owner.id)
@@ -84,7 +83,7 @@ class TemplateService:
         result = await self.session.execute(select(func.count(Template.id)).where(Template.owner_id == owner_id))
         return result.scalar() or 0
 
-    async def get_user_templates(self, owner_id: uuid.UUID, limit: Optional[int] = None) -> List[Template]:
+    async def get_user_templates(self, owner_id: uuid.UUID, limit: int | None = None) -> list[Template]:
         """Get recent templates for a user"""
         result = await self.session.execute(
             select(Template).where(Template.owner_id == owner_id).order_by(Template.created_at.desc()).limit(limit)

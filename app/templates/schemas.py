@@ -1,4 +1,3 @@
-from typing import Any, Dict, List, Optional
 import uuid
 
 from pydantic import BaseModel, Field, field_validator
@@ -8,15 +7,15 @@ class VariableDefinition(BaseModel):
     name: str = Field(..., description="Variable name")
     type: str = Field(..., description="Variable type: string, number, or date")
     required: bool = Field(default=True, description="Whether this variable is required")
-    aliases: List[str] = Field(default_factory=list, description="Alternative names for this variable")
+    aliases: list[str] = Field(default_factory=list, description="Alternative names for this variable")
 
 
 class TemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = None
+    description: str | None = None
     slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_/-]+$")
     content: str = Field(..., min_length=1)
-    variables: List[VariableDefinition] = Field(default_factory=list)
+    variables: list[VariableDefinition] = Field(default_factory=list)
     
     @field_validator('slug')
     @classmethod
@@ -33,15 +32,15 @@ class TemplateCreate(TemplateBase):
 
 
 class TemplateUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = None
-    slug: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_/-]+$")
-    content: Optional[str] = Field(None, min_length=1)
-    variables: Optional[List[VariableDefinition]] = None
+    name: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = None
+    slug: str | None = Field(None, min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9_/-]+$")
+    content: str | None = Field(None, min_length=1)
+    variables: list | VariableDefinition | None = None
     
     @field_validator('slug')
     @classmethod
-    def validate_slug(cls, v: Optional[str]) -> Optional[str]:
+    def validate_slug(cls, v: str | None) -> str | None:
         if v is None:
             return v
         if v.endswith('/'):

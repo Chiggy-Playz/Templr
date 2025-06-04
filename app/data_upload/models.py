@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 import uuid
 
 from app.database import Base
@@ -35,14 +35,14 @@ class UploadJob(Base):
     status: Mapped[str] = mapped_column(
         String(length=20), nullable=False, default="pending"
     )  # pending, processing, completed, failed
-    total_rows: Mapped[Optional[int]] = mapped_column(nullable=True)
-    processed_rows: Mapped[Optional[int]] = mapped_column(nullable=True, default=0)
-    error_message: Mapped[Optional[str]] = mapped_column(nullable=True)
-    result_file_path: Mapped[Optional[str]] = mapped_column(String(length=500), nullable=True)
-    failed_file_path: Mapped[Optional[str]] = mapped_column(String(length=500), nullable=True)
+    total_rows: Mapped[int | None] = mapped_column(nullable=True)
+    processed_rows: Mapped[int | None] = mapped_column(nullable=True, default=0)
+    error_message: Mapped[str | None] = mapped_column(nullable=True)
+    result_file_path: Mapped[str | None] = mapped_column(String(length=500), nullable=True)
+    failed_file_path: Mapped[str | None] = mapped_column(String(length=500), nullable=True)
     template_slugs: Mapped[list] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
 
     # Relationships

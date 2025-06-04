@@ -1,7 +1,6 @@
-from typing import List
 import uuid
 
-from app.auth.config import current_superuser, fastapi_users
+from app.auth.config import current_superuser
 from app.auth.manager import UserManager, get_user_manager
 from app.database import get_async_session
 from app.users.models import User
@@ -29,7 +28,7 @@ async def create_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/", response_model=List[UserRead])
+@router.get("/", response_model=list[UserRead])
 async def get_users(
     skip: int = 0,
     limit: int = 100,

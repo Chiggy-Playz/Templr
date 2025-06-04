@@ -10,9 +10,7 @@ This module provides centralized logging configuration with:
 
 import logging
 import logging.handlers
-import os
 from pathlib import Path
-from typing import Optional
 
 from app.config import settings
 
@@ -22,7 +20,7 @@ def setup_logging(
     log_dir: str = "logs",
     max_bytes: int = 128 * 1024 * 1024,  # 128MB
     backup_count: int = 14,  # 14 backups
-    enable_console: Optional[bool] = None,
+    enable_console: bool | None = None,
 ) -> None:
     """
     Setup logging configuration for the application.

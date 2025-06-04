@@ -32,9 +32,9 @@ def test_nan_handling():
 
     print("=== Testing NaN Handling in Upload Process ===")
     print(f"Original DataFrame:\n{df}")
-    print(f"\nDataFrame info:")
+    print("\nDataFrame info:")
     print(df.info())
-    print(f"\nNaN values per column:")
+    print("\nNaN values per column:")
     print(df.isnull().sum())
 
     data_columns = df.columns.tolist()

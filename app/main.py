@@ -7,15 +7,13 @@ from app.data_upload.routes import router as data_upload_router
 from app.logging_config import setup_logging
 from app.public.routes import router as public_router
 from app.templates.routes import router as templates_router
-from app.users.models import User
 from app.users.routes import router as users_router
-from app.users.schemas import UserCreate, UserRead, UserUpdate
+from app.users.schemas import UserRead, UserUpdate
 from app.web.routes import router as web_router
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 # Initialize logging before anything else
 setup_logging()

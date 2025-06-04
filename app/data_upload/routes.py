@@ -1,5 +1,5 @@
 import json
-from typing import List
+from pathlib import Path
 import uuid
 
 from app.auth.config import current_active_user
@@ -34,7 +34,7 @@ async def upload_data(
     return job
 
 
-@router.get("/jobs", response_model=List[UploadJobRead])
+@router.get("/jobs", response_model=list[UploadJobRead])
 async def get_upload_jobs(
     skip: int = 0,
     limit: int = 100,
@@ -86,9 +86,6 @@ async def download_result_file(
 @router.get("/download/{job_id}")
 async def download_result_file_public(job_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
     """Public download endpoint for result files - no authentication required"""
-    import os
-    from pathlib import Path
-
     # Construct the expected result file path
     upload_dir = Path("uploads")
     result_file_path = upload_dir / f"result_{job_id}.csv"
@@ -127,9 +124,6 @@ async def download_failed_rows_file(
 @router.get("/download-failed/{job_id}")
 async def download_failed_rows_public(job_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
     """Public download endpoint for failed rows files - no authentication required"""
-    import os
-    from pathlib import Path
-
     # Construct the expected failed file path
     upload_dir = Path("uploads")
     failed_file_path = upload_dir / f"failed_{job_id}.csv"

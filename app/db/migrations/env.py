@@ -2,14 +2,13 @@ import asyncio
 import importlib
 from logging.config import fileConfig
 from pathlib import Path
-import pkgutil
 import sys
 
 from alembic import context
 from sqlalchemy.ext.asyncio.engine import create_async_engine
 from sqlalchemy.future import Connection
 
-from app.database import meta, Base
+from app.database import meta
 from app.config import settings
 
 # # this is the Alembic Config object, which provides

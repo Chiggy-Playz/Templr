@@ -1,11 +1,9 @@
 from datetime import date, datetime, timedelta
 import hashlib
-import json
 import math
-import re
 import secrets
 import string
-from typing import Any, Dict, List, Union
+from typing import Any
 
 from app.data_upload.models import UploadedData
 from jinja2 import Template, TemplateError
@@ -14,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def generate_unique_identifier(data: Dict[str, Any], min_length: int = 6) -> str:
+def generate_unique_identifier(data: dict[str, Any], min_length: int = 6) -> str:
     """Generate a unique identifier based on data content."""
     # Create a hash from the data
     data_str = str(sorted(data.items()))
@@ -33,7 +31,7 @@ async def get_existing_identifiers(session: AsyncSession) -> set:
 
 
 def generate_unique_identifier_from_set(
-    data: Dict[str, Any], existing_identifiers: set, min_length: int = 6, max_length: int = 32
+    data: dict[str, Any], existing_identifiers: set, min_length: int = 6, max_length: int = 32
 ) -> str:
     """Generate a unique identifier that doesn't exist in the provided set."""
     for length in range(min_length, max_length + 1):
@@ -66,7 +64,7 @@ def generate_unique_identifier_from_set(
 
 
 async def ensure_unique_identifier(
-    session: AsyncSession, data: Dict[str, Any], min_length: int =6, max_length: int = 32
+    session: AsyncSession, data: dict[str, Any], min_length: int = 6, max_length: int = 32
 ) -> str:
     """Ensure the identifier is unique in the database."""
     existing_identifiers = await get_existing_identifiers(session)
@@ -80,7 +78,7 @@ def calculate_expiry_date() -> datetime:
     return datetime.now(timezone.utc) + timedelta(days=30)
 
 
-def render_template(template_content: str, variables: Dict[str, Any]) -> str:
+def render_template(template_content: str, variables: dict[str, Any]) -> str:
     """Render a Jinja2 template with the provided variables."""
     try:
         template = Template(template_content)
@@ -89,7 +87,7 @@ def render_template(template_content: str, variables: Dict[str, Any]) -> str:
         raise ValueError(f"Template rendering error: {str(e)}")
 
 
-def create_variable_mapping(template_variables: list, data_columns: list) -> Dict[str, str]:
+def create_variable_mapping(template_variables: list, data_columns: list) -> dict[str, str]:
     """Create mapping from data columns to template variables considering aliases and case-insensitive matching."""
     mapping = {}
 
@@ -133,7 +131,7 @@ def validate_template_variables(template_variables: list, data_columns: list) ->
     return True, ""
 
 
-def map_data_row(row_data: Dict[str, Any], template_variables: list, data_columns: list) -> Dict[str, Any]:
+def map_data_row(row_data: dict[str, Any], template_variables: list, data_columns: list) -> dict[str, Any]:
     """Map data row using variable mapping to standardize column names."""
     mapping = create_variable_mapping(template_variables, data_columns)
     mapped_data = {}
@@ -146,7 +144,7 @@ def map_data_row(row_data: Dict[str, Any], template_variables: list, data_column
     return mapped_data
 
 
-def validate_data_types(row_data: Dict[str, Any], template_variables: list) -> tuple[bool, str]:
+def validate_data_types(row_data: dict[str, Any], template_variables: list) -> tuple[bool, str]:
     """Validate data types against template variable definitions."""
     for var_def in template_variables:
         var_name = var_def["name"]
@@ -194,7 +192,7 @@ def validate_data_types(row_data: Dict[str, Any], template_variables: list) -> t
     return True, ""
 
 
-def make_json_serializable(data: Any, var_type: Union[str, None] = None) -> Any:
+def make_json_serializable(data: Any, var_type: str | None = None) -> Any:
     """
     Convert data to JSON serializable format.
     Handles pandas Timestamps, datetime objects, NaN values, and other non-serializable types.
@@ -233,7 +231,7 @@ def make_json_serializable(data: Any, var_type: Union[str, None] = None) -> Any:
         return data
 
 
-def make_template_ready(data: Any, var_type: Union[str, None] = None) -> Any:
+def make_template_ready(data: Any, var_type: str | None = None) -> Any:
     """
     Convert data to template-ready format, preserving datetime objects for template use.
     Similar to make_json_serializable but keeps datetime objects as datetime for Jinja2 templates.
@@ -296,7 +294,7 @@ def _is_nan_value(data: Any) -> bool:
         return False
 
 
-def _impute_nan_value(var_type: Union[str, None] = None) -> Any:
+def _impute_nan_value(var_type: str | None = None) -> Any:
     """Impute NaN values based on variable type"""
     if var_type == "string":
         return ""
@@ -309,7 +307,7 @@ def _impute_nan_value(var_type: Union[str, None] = None) -> Any:
         return ""
 
 
-def make_json_serializable_with_context(row_data: Dict[str, Any], template_variables: list) -> Dict[str, Any]:
+def make_json_serializable_with_context(row_data: dict[str, Any], template_variables: list) -> dict[str, Any]:
     """
     Convert row data to JSON serializable format with variable type context.
     This version knows the expected data types and can properly impute NaN values.
@@ -329,7 +327,7 @@ def make_json_serializable_with_context(row_data: Dict[str, Any], template_varia
     return result
 
 
-def make_template_ready_with_context(row_data: Dict[str, Any], template_variables: list) -> Dict[str, Any]:
+def make_template_ready_with_context(row_data: dict[str, Any], template_variables: list) -> dict[str, Any]:
     """
     Convert row data to template-ready format with variable type context.
     This version preserves datetime objects for template rendering.

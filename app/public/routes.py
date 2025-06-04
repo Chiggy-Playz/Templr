@@ -3,7 +3,7 @@ from datetime import datetime
 from app.data_upload.service import DataUploadService
 from app.database import get_async_session
 from app.templates.service import TemplateService
-from app.utils import make_template_ready_with_context, render_template
+from app.utils import render_template
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute

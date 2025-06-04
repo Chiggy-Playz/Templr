@@ -1,4 +1,3 @@
-from typing import List
 import uuid
 
 from app.auth.config import current_active_user
@@ -6,7 +5,7 @@ from app.database import get_async_session
 from app.templates.schemas import TemplateCreate, TemplateRead, TemplateUpdate
 from app.templates.service import TemplateService
 from app.users.models import User
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["templates"])
@@ -23,7 +22,7 @@ async def create_template(
     return template
 
 
-@router.get("", response_model=List[TemplateRead])
+@router.get("", response_model=list[TemplateRead])
 async def get_templates(
     skip: int = 0,
     limit: int = 100,

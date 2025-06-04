@@ -1,22 +1,18 @@
 import asyncio
 from datetime import datetime
 import logging
-import os
 from pathlib import Path
 import traceback
-from typing import Any, Dict, List, Optional
 import uuid
 
 from app.config import settings
 from app.data_upload.models import UploadedData, UploadJob
-from app.data_upload.schemas import UploadJobRead
 from app.database import async_session_maker
 from app.templates.models import Template
 from app.templates.service import TemplateService
 from app.users.models import User
 from app.utils import (
     calculate_expiry_date,
-    ensure_unique_identifier,
     generate_unique_identifier_from_set,
     get_existing_identifiers,
     make_json_serializable_with_context,
@@ -39,7 +35,7 @@ class DataUploadService:
         self.upload_dir = Path("uploads")
         self.upload_dir.mkdir(exist_ok=True)
 
-    async def create_upload_job(self, file: UploadFile, template_slugs: List[str], owner: User) -> UploadJob:
+    async def create_upload_job(self, file: UploadFile, template_slugs: list[str], owner: User) -> UploadJob:
         # Validate template slugs exist and belong to user
         template_service = TemplateService(self.session)
         templates = []
@@ -71,7 +67,7 @@ class DataUploadService:
 
         return job
 
-    async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: List[Template]):
+    async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: list[Template]):
         """Background task to process uploaded data with comprehensive error handling."""
         session = None
         job = None
@@ -305,7 +301,7 @@ class DataUploadService:
                     logger.error(f"Error closing session: {str(close_error)}")
             logger.info(f"Background processing completed for job {job_id}")
 
-    async def get_upload_jobs(self, owner: User, skip: int = 0, limit: int = 100) -> List[UploadJob]:
+    async def get_upload_jobs(self, owner: User, skip: int = 0, limit: int = 100) -> list[UploadJob]:
         result = await self.session.execute(
             select(UploadJob)
             .where(UploadJob.owner_id == owner.id)
@@ -338,14 +334,14 @@ class DataUploadService:
 
         return data
 
-    async def get_user_recent_jobs(self, owner_id: uuid.UUID, limit: int = 10) -> List[UploadJob]:
+    async def get_user_recent_jobs(self, owner_id: uuid.UUID, limit: int = 10) -> list[UploadJob]:
         """Get recent upload jobs for a user"""
         result = await self.session.execute(
             select(UploadJob).where(UploadJob.owner_id == owner_id).order_by(UploadJob.created_at.desc()).limit(limit)
         )
         return list(result.scalars().all())
 
-    async def get_job_by_id(self, job_id: uuid.UUID, owner_id: uuid.UUID) -> Optional[UploadJob]:
+    async def get_job_by_id(self, job_id: uuid.UUID, owner_id: uuid.UUID) -> UploadJob | None:
         """Get upload job by ID for a specific user"""
         result = await self.session.execute(
             select(UploadJob).where(and_(UploadJob.id == job_id, UploadJob.owner_id == owner_id))

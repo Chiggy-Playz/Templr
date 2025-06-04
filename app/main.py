@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 # Initialize logging before anything else
 setup_logging()
@@ -56,6 +57,19 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
         # For web requests, redirect to login
         return RedirectResponse(url="/login", status_code=302)
+
+    if exc.status_code == 404:
+        # For 404 errors, return a JSON response
+
+        # Check if this is an API request (JSON response expected)
+        accept_header = request.headers.get("accept", "")
+        content_type = request.headers.get("content-type", "")
+
+        if "application/json" in accept_header or "application/json" in content_type:
+            # If it's an API request, return JSON response
+            return JSONResponse(status_code=404, content={"detail": "Resource not found"})
+
+        return Jinja2Templates(directory="app/templates/html").TemplateResponse("errors/404.html", {"request": request})
 
     # For other HTTP exceptions, return JSON response
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})

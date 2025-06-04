@@ -11,8 +11,7 @@
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
       rel="stylesheet"
-    />
-    <style>
+    />    <style>
       .sidebar {
         min-height: 100vh;
         background-color: #f8f9fa;
@@ -24,15 +23,102 @@
         font-weight: bold;
         color: #0d6efd !important;
       }
+      
+      /* Mobile navbar styling */
+      @media (max-width: 767.98px) {
+        .content {
+          padding-top: 0 !important;
+        }
+        .navbar {
+          border-bottom: 1px solid #dee2e6;
+        }
+        .navbar-collapse {
+          border-top: 1px solid #dee2e6;
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
+        }
+      }
     </style>
     {% block head %}{% endblock %}
-  </head>
-  <body class="mb-2">
+  </head>  <body class="mb-2">
+    {% if user %}
+    <!-- Mobile navbar -->
+    <nav class="navbar navbar-expand-md navbar-light bg-light d-md-none">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <i class="bi bi-file-earmark-text"></i> Templr
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mobileNavbar"
+          aria-controls="mobileNavbar"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mobileNavbar">
+          <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}"
+                href="/dashboard"
+              >
+                <i class="bi bi-house-door"></i> Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if '/templates' in request.url.path %}active{% endif %}"
+                href="/templates"
+              >
+                <i class="bi bi-file-earmark-code"></i> Templates
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if '/data-upload' in request.url.path %}active{% endif %}"
+                href="/data-upload"
+              >
+                <i class="bi bi-upload"></i> Data Upload
+              </a>
+            </li>
+            {% if user.is_superuser %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if '/users' in request.url.path %}active{% endif %}"
+                href="/users"
+              >
+                <i class="bi bi-people"></i> Users
+              </a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+              <a
+                class="nav-link {% if '/profile' in request.url.path %}active{% endif %}"
+                href="/profile"
+              >
+                <i class="bi bi-person"></i> Profile
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-danger" href="#" onclick="logout()">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    {% endif %}
+
     <div class="container-fluid">
       <div class={{"row" if user else ""}}>
-        <!-- Sidebar -->
+        <!-- Desktop Sidebar -->
          {% if user %}
-        <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+        <nav class="col-md-3 col-lg-2 d-none d-md-block sidebar">
           <div class="position-sticky pt-3">
             <a class="link nav-link" href="/"><h5 class="navbar-brand px-3 mb-3">
               <i class="bi bi-file-earmark-text"></i> Templr

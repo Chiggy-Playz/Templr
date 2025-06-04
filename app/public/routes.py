@@ -37,7 +37,9 @@ router = APIRouter(tags=["public"], route_class=SafeHTMLRoute)
 
 
 @router.get("/{full_path:path}", response_class=HTMLResponse)
-async def render_template_with_data(full_path: str, session: AsyncSession = Depends(get_async_session)):
+async def render_template_with_data(
+    full_path: str, session: AsyncSession = Depends(get_async_session)
+):
     """Public endpoint to render templates with uploaded data."""
     template_service = TemplateService(session)
     data_service = DataUploadService(session)
@@ -53,20 +55,30 @@ async def render_template_with_data(full_path: str, session: AsyncSession = Depe
         identifier
     )  # Verify the template slug is associated with this data
     if slug not in uploaded_data.template_slugs:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not associated with this data")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template not associated with this data",
+        )
 
     # Render template
     try:
         if slug not in uploaded_data.payload:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template payload not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Template payload not found",
+            )
         template_payload = uploaded_data.payload[slug]
-        
+
         # Convert JSON-serialized data back to template-ready format with datetime objects
-        template_data = convert_payload_to_template_ready(template_payload, template.variables)
+        template_data = convert_payload_to_template_ready(
+            template_payload, template.variables
+        )
         rendered_html = render_template(template.content, template_data)
         return HTMLResponse(content=rendered_html)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 def convert_payload_to_template_ready(payload: dict, template_variables: list) -> dict:

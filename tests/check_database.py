@@ -35,7 +35,7 @@ async def check_aliases_in_database():
             print(f"Template: {template.name} (slug: {template.slug})")
             print(f"Variables: {len(template.variables)}")
             for i, var in enumerate(template.variables):
-                print(f"  Variable {i+1}:")
+                print(f"  Variable {i + 1}:")
                 print(f"    Name: {var.get('name', 'N/A')}")
                 print(f"    Type: {var.get('type', 'N/A')}")
                 print(f"    Required: {var.get('required', 'N/A')}")

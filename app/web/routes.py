@@ -66,13 +66,18 @@ async def templates_page(
     user_templates = await template_service.get_user_templates(user.id)
 
     return templates.TemplateResponse(
-        "templates/list.html", {"request": request, "user": user, "templates": user_templates}
+        "templates/list.html",
+        {"request": request, "user": user, "templates": user_templates},
     )
 
 
 @router.get("/templates/create", response_class=HTMLResponse)
-async def create_template_page(request: Request, user: User = Depends(fastapi_users.current_user())):
-    return templates.TemplateResponse("templates/create.html", {"request": request, "user": user})
+async def create_template_page(
+    request: Request, user: User = Depends(fastapi_users.current_user())
+):
+    return templates.TemplateResponse(
+        "templates/create.html", {"request": request, "user": user}
+    )
 
 
 @router.get("/templates/{template_id}/edit", response_class=HTMLResponse)
@@ -88,7 +93,9 @@ async def edit_template_page(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
 
-    return templates.TemplateResponse("templates/edit.html", {"request": request, "user": user, "template": template})
+    return templates.TemplateResponse(
+        "templates/edit.html", {"request": request, "user": user, "template": template}
+    )
 
 
 @router.get("/data-upload", response_class=HTMLResponse)
@@ -105,7 +112,12 @@ async def data_upload_page(
 
     return templates.TemplateResponse(
         "data_upload/upload.html",
-        {"request": request, "user": user, "templates": user_templates, "recent_jobs": recent_jobs},
+        {
+            "request": request,
+            "user": user,
+            "templates": user_templates,
+            "recent_jobs": recent_jobs,
+        },
     )
 
 
@@ -119,9 +131,15 @@ async def users_page(
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     # Get all users - we'll need to implement this service method
-    return templates.TemplateResponse("users/list.html", {"request": request, "user": user})
+    return templates.TemplateResponse(
+        "users/list.html", {"request": request, "user": user}
+    )
 
 
 @router.get("/profile", response_class=HTMLResponse)
-async def profile_page(request: Request, user: User = Depends(fastapi_users.current_user())):
-    return templates.TemplateResponse("profile.html", {"request": request, "user": user})
+async def profile_page(
+    request: Request, user: User = Depends(fastapi_users.current_user())
+):
+    return templates.TemplateResponse(
+        "profile.html", {"request": request, "user": user}
+    )

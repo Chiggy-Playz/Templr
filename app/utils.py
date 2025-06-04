@@ -31,7 +31,10 @@ async def get_existing_identifiers(session: AsyncSession) -> set:
 
 
 def generate_unique_identifier_from_set(
-    data: dict[str, Any], existing_identifiers: set, min_length: int = 6, max_length: int = 32
+    data: dict[str, Any],
+    existing_identifiers: set,
+    min_length: int = 6,
+    max_length: int = 32,
 ) -> str:
     """Generate a unique identifier that doesn't exist in the provided set."""
     for length in range(min_length, max_length + 1):
@@ -47,7 +50,9 @@ def generate_unique_identifier_from_set(
 
     # Keep trying with random suffixes until we find a unique one
     for _ in range(100):  # Limit attempts to avoid infinite loop
-        random_suffix = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+        random_suffix = "".join(
+            secrets.choice(string.ascii_lowercase + string.digits) for _ in range(4)
+        )
         identifier = f"{base_identifier}{random_suffix}"
 
         if identifier not in existing_identifiers:
@@ -64,11 +69,16 @@ def generate_unique_identifier_from_set(
 
 
 async def ensure_unique_identifier(
-    session: AsyncSession, data: dict[str, Any], min_length: int = 6, max_length: int = 32
+    session: AsyncSession,
+    data: dict[str, Any],
+    min_length: int = 6,
+    max_length: int = 32,
 ) -> str:
     """Ensure the identifier is unique in the database."""
     existing_identifiers = await get_existing_identifiers(session)
-    return generate_unique_identifier_from_set(data, existing_identifiers, min_length, max_length)
+    return generate_unique_identifier_from_set(
+        data, existing_identifiers, min_length, max_length
+    )
 
 
 def calculate_expiry_date() -> datetime:
@@ -87,7 +97,9 @@ def render_template(template_content: str, variables: dict[str, Any]) -> str:
         raise ValueError(f"Template rendering error: {str(e)}")
 
 
-def create_variable_mapping(template_variables: list, data_columns: list) -> dict[str, str]:
+def create_variable_mapping(
+    template_variables: list, data_columns: list
+) -> dict[str, str]:
     """Create mapping from data columns to template variables considering aliases and case-insensitive matching."""
     mapping = {}
 
@@ -114,9 +126,13 @@ def create_variable_mapping(template_variables: list, data_columns: list) -> dic
     return mapping
 
 
-def validate_template_variables(template_variables: list, data_columns: list) -> tuple[bool, str]:
+def validate_template_variables(
+    template_variables: list, data_columns: list
+) -> tuple[bool, str]:
     """Validate that data columns match template variables with case-insensitive and alias support."""
-    required_vars = [var["name"] for var in template_variables if var.get("required", True)]
+    required_vars = [
+        var["name"] for var in template_variables if var.get("required", True)
+    ]
 
     # Create mapping from data columns to template variables
     mapping = create_variable_mapping(template_variables, data_columns)
@@ -131,7 +147,9 @@ def validate_template_variables(template_variables: list, data_columns: list) ->
     return True, ""
 
 
-def map_data_row(row_data: dict[str, Any], template_variables: list, data_columns: list) -> dict[str, Any]:
+def map_data_row(
+    row_data: dict[str, Any], template_variables: list, data_columns: list
+) -> dict[str, Any]:
     """Map data row using variable mapping to standardize column names."""
     mapping = create_variable_mapping(template_variables, data_columns)
     mapped_data = {}
@@ -144,7 +162,9 @@ def map_data_row(row_data: dict[str, Any], template_variables: list, data_column
     return mapped_data
 
 
-def validate_data_types(row_data: dict[str, Any], template_variables: list) -> tuple[bool, str]:
+def validate_data_types(
+    row_data: dict[str, Any], template_variables: list
+) -> tuple[bool, str]:
     """Validate data types against template variable definitions."""
     for var_def in template_variables:
         var_name = var_def["name"]
@@ -163,7 +183,10 @@ def validate_data_types(row_data: dict[str, Any], template_variables: list) -> t
                     try:
                         row_data[var_name] = str(value)
                     except Exception:
-                        return False, f"Variable '{var_name}' should be string, got {type(value).__name__}"
+                        return (
+                            False,
+                            f"Variable '{var_name}' should be string, got {type(value).__name__}",
+                        )
             elif var_type == "number":
                 if not isinstance(value, (int, float)):
                     try:
@@ -176,18 +199,29 @@ def validate_data_types(row_data: dict[str, Any], template_variables: list) -> t
                         else:
                             row_data[var_name] = float(value)
                     except (ValueError, TypeError):
-                        return False, f"Variable '{var_name}' should be number, got invalid value: {value}"
+                        return (
+                            False,
+                            f"Variable '{var_name}' should be number, got invalid value: {value}",
+                        )
             elif var_type == "date":
                 if not isinstance(value, datetime):
                     # Try to parse as date string
                     try:
                         if isinstance(value, str):
-                            parsed_date = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                            parsed_date = datetime.fromisoformat(
+                                value.replace("Z", "+00:00")
+                            )
                             row_data[var_name] = parsed_date
                         else:
-                            return False, f"Variable '{var_name}' should be date, got {type(value).__name__}"
+                            return (
+                                False,
+                                f"Variable '{var_name}' should be date, got {type(value).__name__}",
+                            )
                     except ValueError:
-                        return False, f"Variable '{var_name}' should be date, got invalid format: {value}"
+                        return (
+                            False,
+                            f"Variable '{var_name}' should be date, got invalid format: {value}",
+                        )
 
     return True, ""
 
@@ -307,7 +341,9 @@ def _impute_nan_value(var_type: str | None = None) -> Any:
         return ""
 
 
-def make_json_serializable_with_context(row_data: dict[str, Any], template_variables: list) -> dict[str, Any]:
+def make_json_serializable_with_context(
+    row_data: dict[str, Any], template_variables: list
+) -> dict[str, Any]:
     """
     Convert row data to JSON serializable format with variable type context.
     This version knows the expected data types and can properly impute NaN values.
@@ -327,7 +363,9 @@ def make_json_serializable_with_context(row_data: dict[str, Any], template_varia
     return result
 
 
-def make_template_ready_with_context(row_data: dict[str, Any], template_variables: list) -> dict[str, Any]:
+def make_template_ready_with_context(
+    row_data: dict[str, Any], template_variables: list
+) -> dict[str, Any]:
     """
     Convert row data to template-ready format with variable type context.
     This version preserves datetime objects for template rendering.

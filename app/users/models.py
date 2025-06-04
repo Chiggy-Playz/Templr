@@ -12,10 +12,16 @@ if TYPE_CHECKING:
 class User(SQLAlchemyBaseUserTableUUID, Base):
     __tablename__ = "user"
 
-    username: Mapped[str] = mapped_column(String(length=100), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(
+        String(length=100), unique=True, index=True, nullable=False
+    )
     first_name: Mapped[str | None] = mapped_column(String(length=100), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(length=100), nullable=True)
 
     # Relationships
-    templates: Mapped[list["Template"]] = relationship("Template", back_populates="owner")
-    data_rows: Mapped[list["UploadedData"]] = relationship("UploadedData", back_populates="owner")
+    templates: Mapped[list["Template"]] = relationship(
+        "Template", back_populates="owner"
+    )
+    data_rows: Mapped[list["UploadedData"]] = relationship(
+        "UploadedData", back_populates="owner"
+    )

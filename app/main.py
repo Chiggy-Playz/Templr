@@ -49,7 +49,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
         # If it's an API request, return JSON response
         if "application/json" in accept_header or "application/json" in content_type:
-            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+            return JSONResponse(
+                status_code=401, content={"detail": "Authentication required"}
+            )
 
         # For web requests, redirect to login
         return RedirectResponse(url="/login", status_code=302)

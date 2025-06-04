@@ -15,24 +15,28 @@ from app.config import settings
 # # access to the values within the .ini file in use.
 config = context.config
 
+
 def load_all_models() -> None:
     """Dynamically import all Python modules inside any 'models' subpackage."""
     app_dir = Path(__file__).resolve().parent.parent.parent
-    project_root =  app_dir.parent
+    project_root = app_dir.parent
     sys.path.append(str(project_root))
-    base_package = "app" 
+    base_package = "app"
 
-    for models_file  in app_dir.rglob("models.py"):
+    for models_file in app_dir.rglob("models.py"):
         # Construct the package name
         try:
             rel_path = models_file.relative_to(app_dir)
-            parts = rel_path.with_suffix('').parts  # removes '.py' suffix and gets parts
+            parts = rel_path.with_suffix(
+                ""
+            ).parts  # removes '.py' suffix and gets parts
 
             module_path = f"{base_package}." + ".".join(parts)
             print(f"Importing: {module_path}")
             importlib.import_module(module_path)
         except ValueError:
             continue
+
 
 load_all_models()
 

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 
-    
+
 @router.post("/", response_model=UserRead)
 async def create_user(
     user_data: UserCreate,
@@ -51,7 +51,9 @@ async def get_user(
     result = await session.execute(select(User).where(User.id == user_id))  # type: ignore
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return user
 
 
@@ -66,7 +68,9 @@ async def update_user(
     result = await session.execute(select(User).where(User.id == user_id))  # type: ignore
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     # Update fields
     update_data = user_data.model_dump(exclude_unset=True)
@@ -86,12 +90,16 @@ async def delete_user(
 ):
     """Delete a user (superuser only)."""
     if user_id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself"
+        )
 
     result = await session.execute(select(User).where(User.id == user_id))  # type: ignore
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     await session.delete(user)
     await session.commit()

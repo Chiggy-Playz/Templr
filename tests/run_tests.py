@@ -14,9 +14,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def run_test_file(test_file):
     """Run a single test file and capture results"""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Running: {test_file}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
         # Change to the tests directory
@@ -24,7 +24,9 @@ def run_test_file(test_file):
         os.chdir(test_dir)
 
         # Run the test file
-        result = subprocess.run([sys.executable, test_file], capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            [sys.executable, test_file], capture_output=True, text=True, timeout=30
+        )
 
         print(result.stdout)
         if result.stderr:
@@ -70,9 +72,9 @@ def main():
             results[test_file] = False
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("TEST SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     total_tests = len(results)
     passed_tests = sum(1 for success in results.values() if success)
@@ -81,7 +83,9 @@ def main():
         status = "✓ PASSED" if success else "✗ FAILED"
         print(f"{test_file:<30} {status}")
 
-    print(f"\nTotal: {total_tests}, Passed: {passed_tests}, Failed: {total_tests - passed_tests}")
+    print(
+        f"\nTotal: {total_tests}, Passed: {passed_tests}, Failed: {total_tests - passed_tests}"
+    )
 
     if passed_tests == total_tests:
         print("🎉 All tests passed!")

@@ -22,7 +22,10 @@ def test_json_serialization():
         "amount": 1500.50,
         "date_field": pd.Timestamp("2025-06-01"),
         "datetime_field": datetime(2025, 6, 1, 12, 30, 45),
-        "nested_dict": {"another_date": pd.Timestamp("2025-07-01"), "regular_field": "test"},
+        "nested_dict": {
+            "another_date": pd.Timestamp("2025-07-01"),
+            "regular_field": "test",
+        },
     }
 
     print("=== Testing JSON Serialization ===")

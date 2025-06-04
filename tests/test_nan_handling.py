@@ -22,8 +22,18 @@ def test_nan_handling():
         {"name": "legal_date", "type": "date", "required": True, "aliases": []},
         {"name": "loan_amount", "type": "number", "required": True, "aliases": []},
         {"name": "loan_id", "type": "string", "required": True, "aliases": []},
-        {"name": "outstanding_amount", "type": "number", "required": True, "aliases": []},
-        {"name": "authorised_representative", "type": "string", "required": True, "aliases": []},
+        {
+            "name": "outstanding_amount",
+            "type": "number",
+            "required": True,
+            "aliases": [],
+        },
+        {
+            "name": "authorised_representative",
+            "type": "string",
+            "required": True,
+            "aliases": [],
+        },
     ]
 
     # Read test CSV with NaN values
@@ -51,7 +61,9 @@ def test_nan_handling():
         print(f"Mapped data: {mapped_data}")
 
         # Convert to JSON serializable with type context
-        serializable_data = make_json_serializable_with_context(mapped_data, template_variables)
+        serializable_data = make_json_serializable_with_context(
+            mapped_data, template_variables
+        )
         print(f"Serializable data: {serializable_data}")
 
         # Test JSON serialization

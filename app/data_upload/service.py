@@ -35,7 +35,9 @@ class DataUploadService:
         self.upload_dir = Path("uploads")
         self.upload_dir.mkdir(exist_ok=True)
 
-    async def create_upload_job(self, file: UploadFile, template_slugs: list[str], owner: User) -> UploadJob:
+    async def create_upload_job(
+        self, file: UploadFile, template_slugs: list[str], owner: User
+    ) -> UploadJob:
         # Validate template slugs exist and belong to user
         template_service = TemplateService(self.session)
         templates = []
@@ -44,11 +46,15 @@ class DataUploadService:
                 template = await template_service.get_template_by_slug(slug)
                 if template.owner_id != owner.id:
                     raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN, detail=f"Template '{slug}' not accessible"
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Template '{slug}' not accessible",
                     )
                 templates.append(template)
             except HTTPException:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Template '{slug}' not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Template '{slug}' not found",
+                )
 
         # Save uploaded file
         file_path = self.upload_dir / f"{uuid.uuid4()}_{file.filename}"
@@ -57,17 +63,26 @@ class DataUploadService:
             buffer.write(content)
 
         # Create upload job
-        job = UploadJob(filename=file.filename, status="pending", template_slugs=template_slugs, owner_id=owner.id)
+        job = UploadJob(
+            filename=file.filename,
+            status="pending",
+            template_slugs=template_slugs,
+            owner_id=owner.id,
+        )
         self.session.add(job)
         await self.session.commit()
         await self.session.refresh(job)
 
         # Start background processing
-        asyncio.create_task(self._process_upload_background(job.id, file_path, templates))
+        asyncio.create_task(
+            self._process_upload_background(job.id, file_path, templates)
+        )
 
         return job
 
-    async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: list[Template]):
+    async def _process_upload_background(
+        self, job_id: uuid.UUID, file_path: Path, templates: list[Template]
+    ):
         """Background task to process uploaded data with comprehensive error handling."""
         session = None
         job = None
@@ -77,7 +92,9 @@ class DataUploadService:
 
             # Get job
             logger.info(f"Starting background processing for job {job_id}")
-            result = await session.execute(select(UploadJob).where(UploadJob.id == job_id))
+            result = await session.execute(
+                select(UploadJob).where(UploadJob.id == job_id)
+            )
             job = result.scalar_one_or_none()
 
             if not job:
@@ -103,8 +120,12 @@ class DataUploadService:
                     f"File read successfully. Rows: {len(df)}, Columns: {list(df.columns)}"
                 )  # Validate headers against all templates
                 for template in templates:
-                    logger.debug(f"Validating template {template.slug} against data columns")
-                    is_valid, error_msg = validate_template_variables(template.variables, df.columns.tolist())
+                    logger.debug(
+                        f"Validating template {template.slug} against data columns"
+                    )
+                    is_valid, error_msg = validate_template_variables(
+                        template.variables, df.columns.tolist()
+                    )
                     if not is_valid:
                         raise ValueError(f"Template '{template.slug}': {error_msg}")
 
@@ -113,7 +134,9 @@ class DataUploadService:
                 logger.info(f"Template validation passed. Processing {len(df)} rows")
                 # Fetch all existing identifiers upfront for fast lookup optimization
                 existing_identifiers = await get_existing_identifiers(session)
-                logger.info(f"Loaded {len(existing_identifiers)} existing identifiers for fast lookup")
+                logger.info(
+                    f"Loaded {len(existing_identifiers)} existing identifiers for fast lookup"
+                )
 
                 # Process each row with error tracking
                 processed_data = []
@@ -130,31 +153,47 @@ class DataUploadService:
                         # Map data columns to template variables for each template
                         for template in templates:
                             # Map the row data to template variable names
-                            mapped_data = map_data_row(row_data, template.variables, data_columns)
+                            mapped_data = map_data_row(
+                                row_data, template.variables, data_columns
+                            )
 
                             # Validate data types against template variables
-                            is_valid, error_msg = validate_data_types(mapped_data, template.variables)
+                            is_valid, error_msg = validate_data_types(
+                                mapped_data, template.variables
+                            )
                             if not is_valid:
-                                raise ValueError(f"Template '{template.slug}': {error_msg}")
+                                raise ValueError(
+                                    f"Template '{template.slug}': {error_msg}"
+                                )
 
                         # Create template-specific payloads for each template since they may have different variable mappings
                         template_payloads = {}
                         for template in templates:
                             # Map data for this specific template
-                            template_mapped_data = map_data_row(row_data, template.variables, data_columns)
+                            template_mapped_data = map_data_row(
+                                row_data, template.variables, data_columns
+                            )
 
                             # Make data JSON serializable with this template's variable context
-                            template_serializable_data = make_json_serializable_with_context(
-                                template_mapped_data, template.variables
+                            template_serializable_data = (
+                                make_json_serializable_with_context(
+                                    template_mapped_data, template.variables
+                                )
                             )
-                            template_payloads[template.slug] = template_serializable_data
+                            template_payloads[template.slug] = (
+                                template_serializable_data
+                            )
 
                         # Ensure main_payload is a dict (it should be since template_mapped_data is a dict)
                         if not isinstance(template_payloads, dict):
-                            raise ValueError(f"Expected dict after serialization, got {type(template_payloads)}")
+                            raise ValueError(
+                                f"Expected dict after serialization, got {type(template_payloads)}"
+                            )
 
                         # Generate unique identifier using mapped data
-                        identifier = generate_unique_identifier_from_set(template_payloads, existing_identifiers)
+                        identifier = generate_unique_identifier_from_set(
+                            template_payloads, existing_identifiers
+                        )
 
                         # Create uploaded data record with mapped data
                         uploaded_data = UploadedData(
@@ -170,30 +209,41 @@ class DataUploadService:
                         processed_row = row_data.copy()
                         # Add template URLs with domain
                         for template in templates:
-                            processed_row[f"{template.name}_url"] = f"{settings.domain}/{template.slug}/{identifier}"
+                            processed_row[f"{template.name}_url"] = (
+                                f"{settings.domain}/{template.slug}/{identifier}"
+                            )
 
                         processed_data.append(processed_row)
 
-                        job.processed_rows = index + 1  # Commit every 100 rows to avoid large transactions
+                        job.processed_rows = (
+                            index + 1
+                        )  # Commit every 100 rows to avoid large transactions
                         if (index + 1) % 1000 == 0:
                             await session.commit()
                             logger.debug(f"Committed batch at row {index + 1}")
 
                     except Exception as row_error:
-                        logger.warning(f"Failed to process row {index + 1}: {str(row_error)}")
+                        logger.warning(
+                            f"Failed to process row {index + 1}: {str(row_error)}"
+                        )
 
                         # Create detailed failed row record with original data preserved
-                        failed_row_record = row_data.copy()  # Preserve all original column data
+                        failed_row_record = (
+                            row_data.copy()
+                        )  # Preserve all original column data
                         failed_row_record["_row_number"] = index + 1
                         failed_row_record["_original_row_index"] = original_index
                         failed_row_record["_error_reason"] = str(row_error)
                         failed_row_record["_error_type"] = type(row_error).__name__
 
-                        failed_rows.append(failed_row_record)  # If too many rows fail, abort the process
+                        failed_rows.append(
+                            failed_row_record
+                        )  # If too many rows fail, abort the process
                         if len(failed_rows) > len(df) * 0.5:  # More than 50% failed
                             # Get first few errors for summary
                             sample_errors = [
-                                f"Row {row['_row_number']}: {row['_error_reason']}" for row in failed_rows[:3]
+                                f"Row {row['_row_number']}: {row['_error_reason']}"
+                                for row in failed_rows[:3]
                             ]
                             raise ValueError(
                                 f"Too many rows failed ({len(failed_rows)} out of {index + 1}). Sample errors: {sample_errors}"
@@ -219,19 +269,28 @@ class DataUploadService:
                     failed_df = pd.DataFrame(failed_rows)
                     failed_file_path = self.upload_dir / f"failed_{job_id}.csv"
                     failed_df.to_csv(failed_file_path, index=False)
-                    logger.info(f"Failed rows file created: {failed_file_path} with {len(failed_rows)} failed rows")
+                    logger.info(
+                        f"Failed rows file created: {failed_file_path} with {len(failed_rows)} failed rows"
+                    )
 
                 # Update job as completed
                 job.status = "completed"
-                job.result_file_path = str(result_file_path) if result_file_path else None
-                job.failed_file_path = str(failed_file_path) if failed_file_path else None
+                job.result_file_path = (
+                    str(result_file_path) if result_file_path else None
+                )
+                job.failed_file_path = (
+                    str(failed_file_path) if failed_file_path else None
+                )
                 from datetime import timezone
 
-                job.completed_at = datetime.now(timezone.utc)  # Add summary of failed rows to error message if any
+                job.completed_at = datetime.now(
+                    timezone.utc
+                )  # Add summary of failed rows to error message if any
                 if failed_rows:
                     failed_file_name = f"failed_{job_id}.csv"
                     sample_errors = [
-                        f"Row {row['_row_number']}: {row['_error_reason'][:100]}" for row in failed_rows[:3]
+                        f"Row {row['_row_number']}: {row['_error_reason'][:100]}"
+                        for row in failed_rows[:3]
                     ]
                     job.error_message = (
                         f"Completed with {len(failed_rows)} failed rows. "
@@ -259,7 +318,9 @@ class DataUploadService:
                 raise ve
             except Exception as e:
                 # Handle unexpected errors during processing
-                logger.error(f"Unexpected error during processing of job {job_id}: {str(e)}")
+                logger.error(
+                    f"Unexpected error during processing of job {job_id}: {str(e)}"
+                )
                 logger.error(f"Traceback: {traceback.format_exc()}")
                 raise ValueError(f"Processing failed: {str(e)}")
 
@@ -282,7 +343,9 @@ class DataUploadService:
                     await session.commit()
                     logger.info(f"Job {job_id} marked as failed")
                 except Exception as commit_error:
-                    logger.error(f"Failed to update job status for {job_id}: {str(commit_error)}")
+                    logger.error(
+                        f"Failed to update job status for {job_id}: {str(commit_error)}"
+                    )
 
             # Clean up files
             if file_path.exists():
@@ -290,7 +353,9 @@ class DataUploadService:
                     file_path.unlink()
                     logger.debug(f"Cleaned up file after error: {file_path}")
                 except Exception as cleanup_error:
-                    logger.error(f"Failed to clean up file {file_path}: {str(cleanup_error)}")
+                    logger.error(
+                        f"Failed to clean up file {file_path}: {str(cleanup_error)}"
+                    )
 
         finally:
             # Ensure session is properly closed
@@ -301,7 +366,9 @@ class DataUploadService:
                     logger.error(f"Error closing session: {str(close_error)}")
             logger.info(f"Background processing completed for job {job_id}")
 
-    async def get_upload_jobs(self, owner: User, skip: int = 0, limit: int = 100) -> list[UploadJob]:
+    async def get_upload_jobs(
+        self, owner: User, skip: int = 0, limit: int = 100
+    ) -> list[UploadJob]:
         result = await self.session.execute(
             select(UploadJob)
             .where(UploadJob.owner_id == owner.id)
@@ -313,15 +380,21 @@ class DataUploadService:
 
     async def get_upload_job(self, job_id: uuid.UUID, owner: User) -> UploadJob:
         result = await self.session.execute(
-            select(UploadJob).where(and_(UploadJob.id == job_id, UploadJob.owner_id == owner.id))
+            select(UploadJob).where(
+                and_(UploadJob.id == job_id, UploadJob.owner_id == owner.id)
+            )
         )
         job = result.scalar_one_or_none()
         if not job:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Upload job not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Upload job not found"
+            )
         return job
 
     async def get_uploaded_data_by_identifier(self, identifier: str) -> UploadedData:
-        result = await self.session.execute(select(UploadedData).where(UploadedData.identifier == identifier))
+        result = await self.session.execute(
+            select(UploadedData).where(UploadedData.identifier == identifier)
+        )
         data = result.scalar_one_or_none()
         if not data:
             raise HTTPException(
@@ -330,20 +403,31 @@ class DataUploadService:
         from datetime import timezone
 
         if data.expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=status.HTTP_410_GONE, detail="Data has expired")
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE, detail="Data has expired"
+            )
 
         return data
 
-    async def get_user_recent_jobs(self, owner_id: uuid.UUID, limit: int = 10) -> list[UploadJob]:
+    async def get_user_recent_jobs(
+        self, owner_id: uuid.UUID, limit: int = 10
+    ) -> list[UploadJob]:
         """Get recent upload jobs for a user"""
         result = await self.session.execute(
-            select(UploadJob).where(UploadJob.owner_id == owner_id).order_by(UploadJob.created_at.desc()).limit(limit)
+            select(UploadJob)
+            .where(UploadJob.owner_id == owner_id)
+            .order_by(UploadJob.created_at.desc())
+            .limit(limit)
         )
         return list(result.scalars().all())
 
-    async def get_job_by_id(self, job_id: uuid.UUID, owner_id: uuid.UUID) -> UploadJob | None:
+    async def get_job_by_id(
+        self, job_id: uuid.UUID, owner_id: uuid.UUID
+    ) -> UploadJob | None:
         """Get upload job by ID for a specific user"""
         result = await self.session.execute(
-            select(UploadJob).where(and_(UploadJob.id == job_id, UploadJob.owner_id == owner_id))
+            select(UploadJob).where(
+                and_(UploadJob.id == job_id, UploadJob.owner_id == owner_id)
+            )
         )
         return result.scalar_one_or_none()

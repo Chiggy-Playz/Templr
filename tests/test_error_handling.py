@@ -60,7 +60,9 @@ def test_error_handling():
 
         # Convert to JSON serializable
         try:
-            serializable_data = make_json_serializable_with_context(mapped_data, template_variables)
+            serializable_data = make_json_serializable_with_context(
+                mapped_data, template_variables
+            )
             print(f"  Serializable data: {serializable_data}")
 
             # Test JSON serialization
@@ -103,13 +105,19 @@ def test_error_handling():
         missing_cols_file = Path(f.name)
 
     # Test validation
-    is_valid, error_msg = validate_template_variables(template_variables, df_missing_cols.columns.tolist())
+    is_valid, error_msg = validate_template_variables(
+        template_variables, df_missing_cols.columns.tolist()
+    )
     print(f"  Validation result: {is_valid}, Error: {error_msg}")
 
     # Test 5: CSV with invalid data types
     print("\n5. Testing CSV with invalid data types:")
     df_invalid_types = pd.DataFrame(
-        {"name": ["John Doe"], "address": ["123 Main St"], "amount": ["not_a_number"]}  # Invalid number
+        {
+            "name": ["John Doe"],
+            "address": ["123 Main St"],
+            "amount": ["not_a_number"],
+        }  # Invalid number
     )
 
     print(f"DataFrame with invalid types:\n{df_invalid_types}")
@@ -117,8 +125,12 @@ def test_error_handling():
     # Try to process the invalid data
     try:
         row_data = df_invalid_types.iloc[0].to_dict()
-        mapped_data = map_data_row(row_data, template_variables, df_invalid_types.columns.tolist())
-        serializable_data = make_json_serializable_with_context(mapped_data, template_variables)
+        mapped_data = map_data_row(
+            row_data, template_variables, df_invalid_types.columns.tolist()
+        )
+        serializable_data = make_json_serializable_with_context(
+            mapped_data, template_variables
+        )
         print(f"  Surprisingly processed: {serializable_data}")
     except Exception as e:
         print(f"  Expected error: {e}")

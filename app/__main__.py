@@ -1,6 +1,7 @@
 import uvicorn
 from app.config import settings
 
+
 def main():
     """Run the FastAPI application using Uvicorn."""
     uvicorn.run(
@@ -12,6 +13,7 @@ def main():
         workers=settings.workers,
         forwarded_allow_ips="*",
     )
+
 
 if __name__ == "__main__":
     main()

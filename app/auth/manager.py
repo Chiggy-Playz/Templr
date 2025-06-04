@@ -12,6 +12,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = settings.secret_key
     verification_token_secret = settings.secret_key
 
+
 async def get_user_db(session=Depends(get_async_session)):
     yield SQLAlchemyUserDatabase(session, User)
 

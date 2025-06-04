@@ -20,10 +20,12 @@ down_revision = "496c0fac7e08"
 branch_labels = None
 depends_on = None
 
+
 # To solve bcrypt warning in passlib
 @dataclass
 class SolveBugBcryptWarning:
     __version__: str = getattr(bcrypt, "__version__")
+
 
 setattr(bcrypt, "__about__", SolveBugBcryptWarning())
 
@@ -33,7 +35,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def upgrade() -> None:
     conn = op.get_bind()
 
-    result = conn.execute(sa.text('SELECT * FROM "user" WHERE is_superuser = true LIMIT 1'))
+    result = conn.execute(
+        sa.text('SELECT * FROM "user" WHERE is_superuser = true LIMIT 1')
+    )
     if result.fetchone():
         print("Superuser already exists. Skipping creation.")
         return

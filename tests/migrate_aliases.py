@@ -33,7 +33,9 @@ async def migrate_aliases():
                 if "aliases" not in var:
                     var["aliases"] = []
                     modified = True
-                    print(f"  Added aliases field to variable: {var.get('name', 'unnamed')}")
+                    print(
+                        f"  Added aliases field to variable: {var.get('name', 'unnamed')}"
+                    )
 
             if modified:
                 # Mark the template as modified to trigger the update

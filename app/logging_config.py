@@ -50,12 +50,16 @@ def setup_logging(
 
     # Create formatter
     formatter = logging.Formatter(
-        fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # File handler with rotation
     file_handler = logging.handlers.RotatingFileHandler(
-        filename=log_path / "templr.log", maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
+        filename=log_path / "templr.log",
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+        encoding="utf-8",
     )
     file_handler.setLevel(numeric_level)
     file_handler.setFormatter(formatter)
@@ -73,8 +77,12 @@ def setup_logging(
 
     # Log the configuration
     logger = logging.getLogger(__name__)
-    logger.info(f"Logging configured - Level: {log_level}, File: {log_path / 'templr.log'}")
-    logger.info(f"Log rotation: {max_bytes // (1024*1024)}MB max size, {backup_count} backups")
+    logger.info(
+        f"Logging configured - Level: {log_level}, File: {log_path / 'templr.log'}"
+    )
+    logger.info(
+        f"Log rotation: {max_bytes // (1024 * 1024)}MB max size, {backup_count} backups"
+    )
     logger.info("Log interception complete.")
 
 

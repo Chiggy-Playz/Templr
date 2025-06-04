@@ -75,7 +75,11 @@ async def test_data_processing():
                         "type": "currency",
                         "aliases": ["Outstanding_amount", "outstanding-amount"],
                     },
-                    {"name": "datedue", "type": "date", "aliases": ["Date_due", "date-due"]},
+                    {
+                        "name": "datedue",
+                        "type": "date",
+                        "aliases": ["Date_due", "date-due"],
+                    },
                 ],
                 content="Name: {{ name }}, Email: {{ email }}, Amount: {{ outstandingamount }}, Due: {{ datedue }}",
             )
@@ -111,7 +115,9 @@ async def test_data_processing():
                 mapped_data = map_data_row(row_data, template.variables, data_columns)
 
                 # Make data JSON serializable
-                serializable_data = make_json_serializable_with_context(mapped_data, template.variables)
+                serializable_data = make_json_serializable_with_context(
+                    mapped_data, template.variables
+                )
 
                 # Add to processed data with original row order preserved
                 processed_row = serializable_data.copy()
@@ -120,7 +126,9 @@ async def test_data_processing():
                 processed_data.append(processed_row)
 
                 if index < 5 or index >= len(df) - 5:  # Show first and last few
-                    print(f"Row {index + 1} (original {original_index}): {processed_row}")
+                    print(
+                        f"Row {index + 1} (original {original_index}): {processed_row}"
+                    )
 
             except Exception as e:
                 print(f"Error processing row {index + 1}: {e}")

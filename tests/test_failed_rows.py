@@ -28,7 +28,13 @@ async def test_failed_rows_functionality():
 
         # Create test CSV with mixed valid and invalid data
         test_data = {
-            "name": ["John Doe", "Jane Smith", "", "Bob Wilson", None],  # Some empty names
+            "name": [
+                "John Doe",
+                "Jane Smith",
+                "",
+                "Bob Wilson",
+                None,
+            ],  # Some empty names
             "email": [
                 "john@test.com",
                 "invalid-email",
@@ -36,8 +42,20 @@ async def test_failed_rows_functionality():
                 "bob@test.com",
                 "alice@test.com",
             ],  # One invalid email
-            "Outstanding_amount": [100.50, "invalid-amount", 200.75, 300.00, 150.25],  # One invalid amount
-            "Date_due": ["2024-01-15", "2024-02-20", "invalid-date", "2024-03-10", "2024-04-05"],  # One invalid date
+            "Outstanding_amount": [
+                100.50,
+                "invalid-amount",
+                200.75,
+                300.00,
+                150.25,
+            ],  # One invalid amount
+            "Date_due": [
+                "2024-01-15",
+                "2024-02-20",
+                "invalid-date",
+                "2024-03-10",
+                "2024-04-05",
+            ],  # One invalid date
         }
 
         test_df = pd.DataFrame(test_data)
@@ -61,7 +79,9 @@ async def test_failed_rows_functionality():
                 # Create test user
                 from app.users.schemas import UserCreate
 
-                user_create = UserCreate(email="test@example.com", password="testpass123")
+                user_create = UserCreate(
+                    email="test@example.com", password="testpass123"
+                )
                 user = await user_service.create_user(user_create)
 
             # Get or create test template
@@ -76,15 +96,30 @@ async def test_failed_rows_functionality():
                     name="Test Template",
                     slug="test-template",
                     variables=[
-                        {"name": "name", "type": "text", "aliases": ["Name"], "required": True},
-                        {"name": "email", "type": "email", "aliases": ["Email"], "required": True},
+                        {
+                            "name": "name",
+                            "type": "text",
+                            "aliases": ["Name"],
+                            "required": True,
+                        },
+                        {
+                            "name": "email",
+                            "type": "email",
+                            "aliases": ["Email"],
+                            "required": True,
+                        },
                         {
                             "name": "outstandingamount",
                             "type": "currency",
                             "aliases": ["Outstanding_amount"],
                             "required": True,
                         },
-                        {"name": "datedue", "type": "date", "aliases": ["Date_due"], "required": True},
+                        {
+                            "name": "datedue",
+                            "type": "date",
+                            "aliases": ["Date_due"],
+                            "required": True,
+                        },
                     ],
                     content="Name: {{ name }}, Email: {{ email }}, Amount: {{ outstandingamount }}, Due: {{ datedue }}",
                 )
@@ -123,15 +158,21 @@ async def test_failed_rows_functionality():
                     )
 
                     # Map the row data to template variable names
-                    mapped_data = map_data_row(row_data, template.variables, data_columns)
+                    mapped_data = map_data_row(
+                        row_data, template.variables, data_columns
+                    )
 
                     # Validate data types against template variables
-                    is_valid, error_msg = validate_data_types(mapped_data, template.variables)
+                    is_valid, error_msg = validate_data_types(
+                        mapped_data, template.variables
+                    )
                     if not is_valid:
                         raise ValueError(f"Validation error: {error_msg}")
 
                     # Make data JSON serializable
-                    serializable_data = make_json_serializable_with_context(mapped_data, template.variables)
+                    serializable_data = make_json_serializable_with_context(
+                        mapped_data, template.variables
+                    )
 
                     # Add to processed data with original row order preserved
                     processed_row = serializable_data.copy()
@@ -170,7 +211,18 @@ async def test_failed_rows_functionality():
                 failed_df.to_csv(failed_file, index=False)
                 print(f"✓ Failed rows file saved: {failed_file}")
                 print("\nFailed rows details:")
-                print(failed_df[["_row_number", "_error_reason", "name", "email", "Outstanding_amount", "Date_due"]])
+                print(
+                    failed_df[
+                        [
+                            "_row_number",
+                            "_error_reason",
+                            "name",
+                            "email",
+                            "Outstanding_amount",
+                            "Date_due",
+                        ]
+                    ]
+                )
             else:
                 print("No failed rows to save")
 

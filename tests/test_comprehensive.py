@@ -37,7 +37,12 @@ class TestVariableMapping:
                 "name": "outstanding_amount",
                 "type": "number",
                 "required": True,
-                "aliases": ["Outstanding_amount", "outstanding-amount", "OutstandingAmount", "Outstanding Amount"],
+                "aliases": [
+                    "Outstanding_amount",
+                    "outstanding-amount",
+                    "OutstandingAmount",
+                    "Outstanding Amount",
+                ],
             },
             {
                 "name": "due_date",
@@ -45,7 +50,12 @@ class TestVariableMapping:
                 "required": True,
                 "aliases": ["Due_Date", "due-date", "DueDate", "Due Date"],
             },
-            {"name": "optional_field", "type": "string", "required": False, "aliases": ["opt_field", "OptionalField"]},
+            {
+                "name": "optional_field",
+                "type": "string",
+                "required": False,
+                "aliases": ["opt_field", "OptionalField"],
+            },
         ]
 
     def test_exact_match_mapping(self, template_variables):
@@ -77,7 +87,11 @@ class TestVariableMapping:
         csv_columns = ["CUSTOMER_NAME", "outstanding_amount", "DueDate"]
         mapping = create_variable_mapping(template_variables, csv_columns)
 
-        expected = {"CUSTOMER_NAME": "customer_name", "outstanding_amount": "outstanding_amount", "DueDate": "due_date"}
+        expected = {
+            "CUSTOMER_NAME": "customer_name",
+            "outstanding_amount": "outstanding_amount",
+            "DueDate": "due_date",
+        }
         assert mapping == expected
 
     def test_mixed_alias_case_mapping(self, template_variables):
@@ -85,13 +99,19 @@ class TestVariableMapping:
         csv_columns = ["customerName", "OutstandingAmount", "due-date"]
         mapping = create_variable_mapping(template_variables, csv_columns)
 
-        expected = {"customerName": "customer_name", "OutstandingAmount": "outstanding_amount", "due-date": "due_date"}
+        expected = {
+            "customerName": "customer_name",
+            "OutstandingAmount": "outstanding_amount",
+            "due-date": "due_date",
+        }
         assert mapping == expected
 
     def test_validation_success(self, template_variables):
         """Test successful validation"""
         csv_columns = ["Customer_Name", "Outstanding_amount", "Due_Date"]
-        is_valid, error_msg = validate_template_variables(template_variables, csv_columns)
+        is_valid, error_msg = validate_template_variables(
+            template_variables, csv_columns
+        )
 
         assert is_valid == True
         assert error_msg == ""
@@ -99,7 +119,9 @@ class TestVariableMapping:
     def test_validation_missing_required(self, template_variables):
         """Test validation with missing required variables"""
         csv_columns = ["Customer_Name", "Outstanding_amount"]  # Missing due_date
-        is_valid, error_msg = validate_template_variables(template_variables, csv_columns)
+        is_valid, error_msg = validate_template_variables(
+            template_variables, csv_columns
+        )
 
         assert is_valid == False
         assert "due_date" in error_msg.lower()
@@ -107,11 +129,19 @@ class TestVariableMapping:
     def test_data_row_mapping(self, template_variables):
         """Test mapping of data rows"""
         csv_columns = ["Customer_Name", "Outstanding_amount", "Due_Date"]
-        sample_row = {"Customer_Name": "John Doe", "Outstanding_amount": "1500.50", "Due_Date": "2025-07-01"}
+        sample_row = {
+            "Customer_Name": "John Doe",
+            "Outstanding_amount": "1500.50",
+            "Due_Date": "2025-07-01",
+        }
 
         mapped_row = map_data_row(sample_row, template_variables, csv_columns)
 
-        expected = {"customer_name": "John Doe", "outstanding_amount": "1500.50", "due_date": "2025-07-01"}
+        expected = {
+            "customer_name": "John Doe",
+            "outstanding_amount": "1500.50",
+            "due_date": "2025-07-01",
+        }
         assert mapped_row == expected
 
 
@@ -137,7 +167,11 @@ class TestDataTypeValidation:
 
     def test_number_conversion_success(self, template_variables):
         """Test successful number conversion"""
-        row_data = {"name": "John Doe", "amount": "100.50", "date_field": datetime.now()}
+        row_data = {
+            "name": "John Doe",
+            "amount": "100.50",
+            "date_field": datetime.now(),
+        }
         is_valid, error_msg = validate_data_types(row_data, template_variables)
 
         assert is_valid == True
@@ -166,7 +200,11 @@ class TestDataTypeValidation:
 
     def test_invalid_number_validation(self, template_variables):
         """Test invalid number validation"""
-        row_data = {"name": "John Doe", "amount": "not_a_number", "date_field": datetime.now()}
+        row_data = {
+            "name": "John Doe",
+            "amount": "not_a_number",
+            "date_field": datetime.now(),
+        }
         is_valid, error_msg = validate_data_types(row_data, template_variables)
 
         assert is_valid == False

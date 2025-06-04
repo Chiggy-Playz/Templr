@@ -15,13 +15,27 @@ if TYPE_CHECKING:
 class UploadedData(Base):
     __tablename__ = "uploaded_data"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    identifier: Mapped[str] = mapped_column(String(length=64), unique=True, index=True, nullable=False)
-    payload: Mapped[Any] = mapped_column(JSONB, nullable=False)  # Stores data row as JSON
-    template_slugs: Mapped[list] = mapped_column(JSONB, nullable=False)  # Associated template slugs
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    identifier: Mapped[str] = mapped_column(
+        String(length=64), unique=True, index=True, nullable=False
+    )
+    payload: Mapped[Any] = mapped_column(
+        JSONB, nullable=False
+    )  # Stores data row as JSON
+    template_slugs: Mapped[list] = mapped_column(
+        JSONB, nullable=False
+    )  # Associated template slugs
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user.id"), nullable=False
+    )
 
     # Relationships
     owner: Mapped["User"] = relationship("User", back_populates="data_rows")
@@ -30,7 +44,9 @@ class UploadedData(Base):
 class UploadJob(Base):
     __tablename__ = "upload_jobs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     filename: Mapped[str] = mapped_column(String(length=255), nullable=False)
     status: Mapped[str] = mapped_column(
         String(length=20), nullable=False, default="pending"
@@ -38,12 +54,22 @@ class UploadJob(Base):
     total_rows: Mapped[int | None] = mapped_column(nullable=True)
     processed_rows: Mapped[int | None] = mapped_column(nullable=True, default=0)
     error_message: Mapped[str | None] = mapped_column(nullable=True)
-    result_file_path: Mapped[str | None] = mapped_column(String(length=500), nullable=True)
-    failed_file_path: Mapped[str | None] = mapped_column(String(length=500), nullable=True)
+    result_file_path: Mapped[str | None] = mapped_column(
+        String(length=500), nullable=True
+    )
+    failed_file_path: Mapped[str | None] = mapped_column(
+        String(length=500), nullable=True
+    )
     template_slugs: Mapped[list] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user.id"), nullable=False
+    )
 
     # Relationships
     owner: Mapped["User"] = relationship("User")

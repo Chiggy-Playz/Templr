@@ -245,12 +245,15 @@ block content %}
         return;
       } // Add template slugs to form data as JSON string
       formData.append("template_slugs", JSON.stringify(templateSlugs));
+      const submitButton = e.target.querySelector('button[type="submit"]');
+      const originalButtonContent = submitButton.innerHTML;
 
       try {
-        const submitButton = e.target.querySelector('button[type="submit"]');
+        // Disable button and show loading state
         submitButton.disabled = true;
         submitButton.innerHTML =
-          '<i class="bi bi-arrow-clockwise"></i> Uploading...';
+          '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...';
+
         const response = await fetch("/api/data-upload/", {
           method: "POST",
           body: formData,
@@ -259,11 +262,14 @@ block content %}
 
         if (response.ok) {
           const result = await response.json();
+          // Show success state briefly
+          submitButton.innerHTML =
+            '<i class="bi bi-check-circle me-2"></i>Upload Successful!';
           showAlert(
             "File uploaded successfully! Processing started.",
             "success"
           );
-          setTimeout(() => window.location.reload(), 2000);
+          setTimeout(() => window.location.reload(), 1000);
         } else {
           const error = await response.json();
           showAlert(error.detail || "Upload failed", "danger");
@@ -271,10 +277,16 @@ block content %}
       } catch (error) {
         showAlert("Upload failed. Please try again.", "danger");
       } finally {
-        const submitButton = e.target.querySelector('button[type="submit"]');
-        submitButton.disabled = false;
-        submitButton.innerHTML =
-          '<i class="bi bi-upload"></i> Upload and Process';
+        // Only restore button if we're not reloading the page
+        setTimeout(() => {
+          if (
+            submitButton &&
+            !submitButton.innerHTML.includes("Upload Successful")
+          ) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonContent;
+          }
+        }, 100);
       }
     });
   // Handle "Select All Templates" checkbox functionality

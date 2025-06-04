@@ -34,10 +34,21 @@ block content %}
               contain headers.
             </div>
           </div>
-
           <div class="mb-3">
             <label class="form-label">Select Templates</label>
             {% if templates %}
+            <div class="mb-2">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="selectAllTemplates"
+                />
+                <label class="form-check-label" for="selectAllTemplates">
+                  <strong>Select All Templates</strong>
+                </label>
+              </div>
+            </div>
             <div class="row">
               {% for template in templates %}
               <div class="col-md-6 mb-2">
@@ -266,6 +277,56 @@ block content %}
           '<i class="bi bi-upload"></i> Upload and Process';
       }
     });
+  // Handle "Select All Templates" checkbox functionality
+  function initializeSelectAllTemplates() {
+    const selectAllCheckbox = document.getElementById("selectAllTemplates");
+    const templateCheckboxes = document.querySelectorAll(
+      'input[name="template_slugs"]'
+    );
+
+    if (!selectAllCheckbox || templateCheckboxes.length === 0) return;
+
+    // Function to update the Select All checkbox state based on individual checkboxes
+    function updateSelectAllState() {
+      const checkedCount = Array.from(templateCheckboxes).filter(
+        (cb) => cb.checked
+      ).length;
+      const totalCount = templateCheckboxes.length;
+
+      if (checkedCount === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (checkedCount === totalCount) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+      } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+      }
+    }
+
+    // Handle Select All checkbox click
+    selectAllCheckbox.addEventListener("change", function () {
+      const shouldCheck = this.checked;
+      templateCheckboxes.forEach((checkbox) => {
+        checkbox.checked = shouldCheck;
+      });
+      // Clear indeterminate state when manually clicked
+      this.indeterminate = false;
+    });
+
+    // Handle individual template checkbox changes
+    templateCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", updateSelectAllState);
+    });
+
+    // Initialize the Select All state on page load
+    updateSelectAllState();
+  }
+
+  // Initialize the Select All functionality when page loads
+  initializeSelectAllTemplates();
+
   function showError(message) {
     showAlert(message, "danger");
   }

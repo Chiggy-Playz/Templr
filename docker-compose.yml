@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   app:
     container_name: templr
@@ -17,7 +15,7 @@ services:
       timeout: 10s
       retries: 3
     depends_on:
-      templr-db:
+      db:
         condition: service_healthy
        
 

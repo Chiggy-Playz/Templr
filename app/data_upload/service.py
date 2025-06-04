@@ -11,6 +11,7 @@ from app.config import settings
 from app.data_upload.models import UploadedData, UploadJob
 from app.data_upload.schemas import UploadJobRead
 from app.database import async_session_maker
+from app.templates.models import Template
 from app.templates.service import TemplateService
 from app.users.models import User
 from app.utils import (
@@ -70,7 +71,7 @@ class DataUploadService:
 
         return job
 
-    async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: List):
+    async def _process_upload_background(self, job_id: uuid.UUID, file_path: Path, templates: List[Template]):
         """Background task to process uploaded data with comprehensive error handling."""
         session = None
         job = None
@@ -117,7 +118,6 @@ class DataUploadService:
                 # Fetch all existing identifiers upfront for fast lookup optimization
                 existing_identifiers = await get_existing_identifiers(session)
                 logger.info(f"Loaded {len(existing_identifiers)} existing identifiers for fast lookup")
-                logger.info(f"Loaded {len(existing_identifiers)} existing identifiers for fast lookup")
 
                 # Process each row with error tracking
                 processed_data = []
@@ -131,7 +131,6 @@ class DataUploadService:
                     row_data = {}  # Initialize to avoid unbound variable issues
                     try:
                         row_data = row.to_dict()
-
                         # Map data columns to template variables for each template
                         for template in templates:
                             # Map the row data to template variable names
@@ -142,25 +141,29 @@ class DataUploadService:
                             if not is_valid:
                                 raise ValueError(f"Template '{template.slug}': {error_msg}")
 
-                        # Use the mapped data for the first template (they should all have the same mapping)
-                        final_mapped_data = map_data_row(row_data, templates[0].variables, data_columns)
+                        # Create template-specific payloads for each template since they may have different variable mappings
+                        template_payloads = {}
+                        for template in templates:
+                            # Map data for this specific template
+                            template_mapped_data = map_data_row(row_data, template.variables, data_columns)
 
-                        # Make data JSON serializable (convert pandas Timestamps, NaN values, etc.)
-                        serializable_data = make_json_serializable_with_context(
-                            final_mapped_data, templates[0].variables
-                        )
+                            # Make data JSON serializable with this template's variable context
+                            template_serializable_data = make_json_serializable_with_context(
+                                template_mapped_data, template.variables
+                            )
+                            template_payloads[template.slug] = template_serializable_data
 
-                        # Ensure serializable_data is a dict (it should be since final_mapped_data is a dict)
-                        if not isinstance(serializable_data, dict):
-                            raise ValueError(
-                                f"Expected dict after serialization, got {type(serializable_data)}"
-                            )  # Generate unique identifier using mapped data
-                        identifier = generate_unique_identifier_from_set(serializable_data, existing_identifiers)
+                        # Ensure main_payload is a dict (it should be since template_mapped_data is a dict)
+                        if not isinstance(template_payloads, dict):
+                            raise ValueError(f"Expected dict after serialization, got {type(template_payloads)}")
+
+                        # Generate unique identifier using mapped data
+                        identifier = generate_unique_identifier_from_set(template_payloads, existing_identifiers)
 
                         # Create uploaded data record with mapped data
                         uploaded_data = UploadedData(
                             identifier=identifier,
-                            payload=serializable_data,  # Store the JSON-serializable data
+                            payload=template_payloads,  # Store the full payload with template-specific data
                             template_slugs=job.template_slugs,
                             expires_at=calculate_expiry_date(),
                             owner_id=job.owner_id,
@@ -168,12 +171,10 @@ class DataUploadService:
                         session.add(uploaded_data)
 
                         # Add to processed data for result file with original row order preserved
-                        processed_row = serializable_data.copy()
-                        processed_row["_original_row_index"] = original_index  # Track original position
-
+                        processed_row = row_data.copy()
                         # Add template URLs with domain
                         for template in templates:
-                            processed_row[f"{template.slug}_url"] = f"{settings.domain}/{template.slug}/{identifier}"
+                            processed_row[f"{template.name}_url"] = f"{settings.domain}/{template.slug}/{identifier}"
 
                         processed_data.append(processed_row)
 

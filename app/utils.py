@@ -142,9 +142,6 @@ def map_data_row(row_data: Dict[str, Any], template_variables: list, data_column
         if col in mapping:
             template_var = mapping[col]
             mapped_data[template_var] = value
-        else:
-            # Keep unmapped columns as-is
-            mapped_data[col] = value
 
     return mapped_data
 

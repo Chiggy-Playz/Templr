@@ -26,7 +26,7 @@ class SafeHTMLRoute(APIRoute):
             "/admin",
             "/docs",
             "/redoc",
-            "/templates"
+            "/templates",
         ]:
             if path.startswith(prefix):
                 return Match.NONE, {}
@@ -49,16 +49,20 @@ async def render_template_with_data(full_path: str, session: AsyncSession = Depe
     template = await template_service.get_template_by_slug(slug)
 
     # Get data
-    uploaded_data = await data_service.get_uploaded_data_by_identifier(identifier)
-
-    # Verify the template slug is associated with this data
+    uploaded_data = await data_service.get_uploaded_data_by_identifier(
+        identifier
+    )  # Verify the template slug is associated with this data
     if slug not in uploaded_data.template_slugs:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template not associated with this data"
-        )  # Render template
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not associated with this data")
+
+    # Render template
     try:
+        if slug not in uploaded_data.payload:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template payload not found")
+        template_payload = uploaded_data.payload[slug]
+        
         # Convert JSON-serialized data back to template-ready format with datetime objects
-        template_data = convert_payload_to_template_ready(uploaded_data.payload, template.variables)
+        template_data = convert_payload_to_template_ready(template_payload, template.variables)
         rendered_html = render_template(template.content, template_data)
         return HTMLResponse(content=rendered_html)
     except ValueError as e:

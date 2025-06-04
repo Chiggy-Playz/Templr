@@ -10,13 +10,14 @@
 </div>
 
 <form id="templateForm">
-  <div class="row">
-    <div class="col-md-8">
-      <div class="card">
-        <div class="card-header">
-          <h5>Template Details</h5>
-        </div>
-        <div class="card-body">
+  <!-- Section 1: Template Details -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5><i class="bi bi-info-circle"></i> Template Details</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
           <div class="mb-3">
             <label for="name" class="form-label">Template Name</label>
             <input
@@ -28,7 +29,8 @@
               required
             />
           </div>
-
+        </div>
+        <div class="col-md-6">
           <div class="mb-3">
             <label for="slug" class="form-label">URL Slug</label>
             <div class="input-group">
@@ -42,93 +44,118 @@
                 required
               />
               <span class="input-group-text">/[identifier]</span>
-            </div>            <div class="form-text">
-              Letters, numbers, hyphens, underscores, and forward slashes allowed (e.g., ABCD/DEF). Cannot end with slash.
             </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea
-              class="form-control"
-              id="description"
-              name="description"
-              rows="3"
-            >
-{{ template.description or '' }}</textarea
-            >
-          </div>
-
-          <div class="mb-3">
-            <label for="content" class="form-label">Template Content</label>
-            <textarea
-              class="form-control"
-              id="content"
-              name="content"
-              rows="15"
-              required
-            >
-{{ template.content }}</textarea
-            >
             <div class="form-text">
-              Use Jinja2 syntax. Variables: {{ variable_name }}
+              Letters, numbers, hyphens, underscores, and forward slashes
+              allowed (e.g., ABCD/DEF). Cannot end with slash.
             </div>
           </div>
         </div>
+      </div>
+      <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea
+          class="form-control"
+          id="description"
+          name="description"
+          rows="3"
+        >
+{{ template.description or '' }}</textarea
+        >
       </div>
     </div>
+  </div>
 
-    <div class="col-md-4">
-      <div class="card">
+  <!-- Section 2: Variables -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5><i class="bi bi-list-ul"></i> Variables</h5>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary"
+        onclick="addVariable()"
+      >
+        <i class="bi bi-plus"></i> Add Variable
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered" id="variables-table">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 25%">Variable Name</th>
+              <th style="width: 15%">Type</th>
+              <th style="width: 45%">
+                Aliases <small class="text-muted">(comma separated)</small>
+              </th>
+              <th style="width: 15%">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="variables-container">
+            <!-- Variables will be added here -->
+          </tbody>
+        </table>
         <div
-          class="card-header d-flex justify-content-between align-items-center"
+          id="no-variables-message"
+          class="text-center text-muted py-3"
+          style="display: none"
         >
-          <h6>Variables</h6>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            onclick="addVariable()"
-          >
-            <i class="bi bi-plus"></i> Add
-          </button>
-        </div>
-        <div class="card-body">
-          <div id="variables-container">
-            <!-- Variables will be populated here -->
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-3">
-        <div class="card-header">
-          <h6>Preview</h6>
-        </div>
-        <div class="card-body">
-          <button
-            type="button"
-            class="btn btn-outline-info btn-sm w-100"
-            onclick="previewTemplate()"
-          >
-            <i class="bi bi-eye"></i> Preview Template
-          </button>
+          No variables added yet. Click "Add Variable" to get started.
         </div>
       </div>
     </div>
   </div>
 
-  <div class="row mt-3">
-    <div class="col-12">
-      <button type="submit" class="btn btn-primary">
+  <!-- Section 3: Template Content -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5><i class="bi bi-file-text"></i> Template Content</h5>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label for="content" class="form-label">Template Content</label>
+        <textarea
+          class="form-control"
+          id="content"
+          name="content"
+          rows="12"
+          required
+          placeholder="Enter your template content here..."
+        >
+{{ template.content }}</textarea
+        >
+        <div class="form-text">
+          Use Jinja2 syntax. Variables: {{ '{{ variable_name }}' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <button type="submit" class="btn btn-primary me-2">
         <i class="bi bi-check"></i> Update Template
       </button>
-      <a href="/templates" class="btn btn-secondary ms-2">Cancel</a>
       <button
         type="button"
-        class="btn btn-danger ms-2"
+        class="btn btn-outline-info me-2"
+        onclick="previewTemplate()"
+      >
+        <i class="bi bi-eye"></i> Preview Template
+      </button>
+    </div>
+    <div>
+      <button
+        type="button"
+        class="btn btn-danger me-2"
         onclick="deleteTemplate()"
       >
         <i class="bi bi-trash"></i> Delete Template
       </button>
+      <a href="/templates" class="btn btn-secondary">
+        <i class="bi bi-x"></i> Cancel
+      </a>
     </div>
   </div>
 </form>
@@ -136,85 +163,122 @@
 <script>
   let variableCount = 0;
   const templateVariables = {{ template.variables | tojson }};
+
   function addVariable(varData = null) {
-      const container = document.getElementById('variables-container');
-      const variableDiv = document.createElement('div');
-      variableDiv.className = 'mb-3 variable-item border p-3 rounded';
+    const container = document.getElementById("variables-container");
+    const noVariablesMessage = document.getElementById("no-variables-message");
 
-      const aliases = varData && varData.aliases && Array.isArray(varData.aliases) ? varData.aliases.join(', ') : '';
+    // Hide the "no variables" message
+    if (noVariablesMessage) {
+      noVariablesMessage.style.display = "none";
+    }
 
-      variableDiv.innerHTML = `
-          <div class="row mb-2">
-              <div class="col-6">
-                  <label class="form-label small">Variable Name</label>
-                  <input type="text" class="form-control form-control-sm" placeholder="e.g., outstandingamount"
-                         name="var_name_${variableCount}" value="${varData ? varData.name : ''}">
-              </div>
-              <div class="col-4">
-                  <label class="form-label small">Type</label>
-                  <select class="form-select form-select-sm" name="var_type_${variableCount}">
-                      <option value="string" ${varData && varData.type === 'string' ? 'selected' : ''}>String</option>
-                      <option value="number" ${varData && varData.type === 'number' ? 'selected' : ''}>Number</option>
-                      <option value="date" ${varData && varData.type === 'date' ? 'selected' : ''}>Date</option>
-                  </select>
-              </div>
-              <div class="col-2 d-flex align-items-end">
-                  <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeVariable(this)">
-                      <i class="bi bi-trash"></i>
-                  </button>
-              </div>
-          </div>
-          <div class="row">
-              <div class="col-12">
-                  <label class="form-label small">Aliases <span class="text-muted">(optional - comma separated)</span></label>
-                  <input type="text" class="form-control form-control-sm" placeholder="e.g., Outstanding_amount, outstanding-amount, OutstandingAmount"
-                         name="var_aliases_${variableCount}" value="${aliases}">
-                  <div class="form-text small">Alternative names for this variable that can appear in CSV headers</div>
-              </div>
-          </div>
-      `;
-      container.appendChild(variableDiv);
-      variableCount++;
+    const aliases = varData && varData.aliases && Array.isArray(varData.aliases) ? varData.aliases.join(', ') : '';
+
+    const row = document.createElement("tr");
+    row.className = "variable-row";
+    row.innerHTML = `
+      <td>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          placeholder="e.g., address"
+          name="var_name_${variableCount}"
+          value="${varData ? varData.name : ''}"
+          required
+        >
+      </td>
+      <td>
+        <select class="form-select form-select-sm" name="var_type_${variableCount}">
+          <option value="string" ${varData && varData.type === 'string' ? 'selected' : ''}>String</option>
+          <option value="number" ${varData && varData.type === 'number' ? 'selected' : ''}>Number</option>
+          <option value="date" ${varData && varData.type === 'date' ? 'selected' : ''}>Date</option>
+        </select>
+      </td>
+      <td>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          placeholder="e.g., customeraddress "
+          name="var_aliases_${variableCount}"
+          value="${aliases}"
+        >
+      </td>
+      <td>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger"
+          onclick="removeVariable(this)"
+          title="Remove variable"
+        >
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+
+    container.appendChild(row);
+    variableCount++;
+
+    // Focus on the new variable name input if it's empty
+    if (!varData) {
+      row.querySelector('input[type="text"]').focus();
+    }
   }
 
   function removeVariable(button) {
-      button.closest('.variable-item').remove();
-  }
+    const row = button.closest(".variable-row");
+    row.remove();
 
+    // Show "no variables" message if no variables left
+    const container = document.getElementById("variables-container");
+    const noVariablesMessage = document.getElementById("no-variables-message");
+
+    if (container.children.length === 0 && noVariablesMessage) {
+      noVariablesMessage.style.display = "block";
+    }
+  }
   // Load existing variables
   templateVariables.forEach(variable => {
       addVariable(variable);
   });
 
-  // Add empty variable if none exist
+  // Show "no variables" message if none exist
   if (templateVariables.length === 0) {
-      addVariable();
+      const noVariablesMessage = document.getElementById("no-variables-message");
+      if (noVariablesMessage) {
+        noVariablesMessage.style.display = "block";
+      }
   }
 
   document.getElementById('templateForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const formData = new FormData(e.target);
-      const variables = [];      // Collect variables
-      const variableItems = document.querySelectorAll('.variable-item');
-      variableItems.forEach((item, index) => {
-          const nameInput = item.querySelector(`input[name^="var_name_"]`);
-          const typeSelect = item.querySelector(`select[name^="var_type_"]`);
-          const aliasesInput = item.querySelector(`input[name^="var_aliases_"]`);
+      const variables = [];
 
-          if (nameInput && nameInput.value.trim()) {
-              const aliases = aliasesInput && aliasesInput.value.trim()
-                ? aliasesInput.value.split(',').map(alias => alias.trim()).filter(alias => alias)
-                : [];
+      // Collect variables from table rows
+      for (let i = 0; i < variableCount; i++) {
+        const nameInput = document.querySelector(`input[name="var_name_${i}"]`);
+        const typeSelect = document.querySelector(`select[name="var_type_${i}"]`);
+        const aliasesInput = document.querySelector(`input[name="var_aliases_${i}"]`);
 
-              variables.push({
-                  name: nameInput.value.trim(),
-                  type: typeSelect.value,
-                  required: true,
-                  aliases: aliases
-              });
-          }
-      });
+        if (nameInput && nameInput.value.trim()) {
+          const aliases =
+            aliasesInput && aliasesInput.value.trim()
+              ? aliasesInput.value
+                  .split(",")
+                  .map((alias) => alias.trim())
+                  .filter((alias) => alias)
+              : [];
+
+          variables.push({
+            name: nameInput.value.trim(),
+            type: typeSelect.value,
+            required: true,
+            aliases: aliases,
+          });
+        }
+      }
 
       const templateData = {
           name: formData.get('name'),
@@ -238,7 +302,7 @@
           } else {
               const error = await response.json();
               let errorMessage = 'Failed to update template';
-              
+
               if (error.detail) {
                   if (typeof error.detail === 'string') {
                       errorMessage = error.detail;
@@ -250,7 +314,7 @@
                       errorMessage = JSON.stringify(error.detail);
                   }
               }
-              
+
               showAlert(errorMessage, 'danger');
           }
       } catch (error) {
@@ -270,7 +334,7 @@
               } else {
                   const error = await response.json();
                   let errorMessage = 'Failed to delete template';
-                  
+
                   if (error.detail) {
                       if (typeof error.detail === 'string') {
                           errorMessage = error.detail;
@@ -282,7 +346,7 @@
                           errorMessage = JSON.stringify(error.detail);
                       }
                   }
-                  
+
                   showAlert(errorMessage, 'danger');
               }
           } catch (error) {

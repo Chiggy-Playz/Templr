@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  templr:
+  app:
     container_name: templr
     build: .
     ports:
@@ -23,7 +23,7 @@ services:
         condition: service_healthy
        
 
-  templr-db:
+  db:
     container_name: templr-db
     image: postgres:15
     environment:

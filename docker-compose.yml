@@ -2,14 +2,16 @@ version: "3.8"
 
 services:
   templr:
+    container_name: templr
     build: .
     ports:
       - "8000:8000"
     volumes:
-      - ./logs:/logs
-      - ./uploads:/uploads
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
     environment:
       - PYTHONUNBUFFERED=1
+    env_file: .env
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -17,9 +19,12 @@ services:
       timeout: 10s
       retries: 3
     depends_on:
-      - templr-db
+      templr-db:
+        condition: service_healthy
+       
 
   templr-db:
+    container_name: templr-db
     image: postgres:15
     environment:
       - POSTGRES_DB=templr
@@ -29,7 +34,7 @@ services:
       - templr-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "templr"]
-      interval: 30s
+      interval: 20s
       timeout: 10s
       retries: 3
     restart: unless-stopped

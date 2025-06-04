@@ -6,9 +6,11 @@ Create Date: 2025-06-03 22:05:22.602733
 
 """
 
+from dataclasses import dataclass
 import uuid
 import sqlalchemy as sa
 from alembic import op
+import bcrypt
 from passlib.context import CryptContext
 from app.config import settings
 
@@ -17,6 +19,13 @@ revision = "b255f508b615"
 down_revision = "496c0fac7e08"
 branch_labels = None
 depends_on = None
+
+# To solve bcrypt warning in passlib
+@dataclass
+class SolveBugBcryptWarning:
+    __version__: str = getattr(bcrypt, "__version__")
+
+setattr(bcrypt, "__about__", SolveBugBcryptWarning())
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

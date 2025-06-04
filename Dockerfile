@@ -13,10 +13,16 @@ COPY pyproject.toml uv.lock ./
 # Install dependencies
 RUN uv sync --frozen --no-cache
 
+# Copy Alembic configuration
+COPY alembic.ini .
+
+COPY start.sh /start.sh
+
+RUN chmod +x /start.sh
+
 # Copy only the app directory
 COPY app ./app
 
 EXPOSE 8000
 
-# Run the application as a module
-CMD ["uv", "run", "-m", "app"]
+CMD ["/start.sh"]

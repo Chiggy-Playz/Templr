@@ -82,7 +82,10 @@
               <th style="width: 25%">Variable Name</th>
               <th style="width: 15%">Type</th>
               <th style="width: 45%">
-                Aliases <small class="text-muted">(comma separated, Alternative names for CSV headers)</small>
+                Aliases
+                <small class="text-muted"
+                  >(comma separated, Alternative names for CSV headers)</small
+                >
               </th>
               <th style="width: 15%">Actions</th>
             </tr>
@@ -315,10 +318,23 @@
     const previewWindow = window.open("", "_blank");
     previewWindow.document.write(`
         <html>
-            <head><title>Template Preview</title></head>
-            <body style="font-family: Arial, sans-serif; padding: 20px;">
-                <h3>Template Preview</h3>
-                <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px;">${content}</pre>
+            <head>
+                <title>Template Preview</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 20px;
+                    }
+                    .template-preview {
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 5px;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Template Preview</h1>
+                <div class="template-preview">${content}</div>
             </body>
         </html>
     `);

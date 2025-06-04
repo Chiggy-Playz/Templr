@@ -364,15 +364,28 @@
 
       // Open preview in new window
       const previewWindow = window.open('', '_blank');
-      previewWindow.document.write(`
-          <html>
-              <head><title>Template Preview</title></head>
-              <body style="font-family: Arial, sans-serif; padding: 20px;">
-                  <h3>Template Preview</h3>
-                  <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px;">${content}</pre>
-              </body>
-          </html>
-      `);
+    previewWindow.document.write(`
+        <html>
+            <head>
+                <title>Template Preview</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 20px;
+                    }
+                    .template-preview {
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 5px;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Template Preview</h1>
+                <div class="template-preview">${content}</div>
+            </body>
+        </html>
+    `);
   }
 </script>
 {% endblock %}

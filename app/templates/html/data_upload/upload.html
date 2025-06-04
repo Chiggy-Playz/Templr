@@ -144,27 +144,19 @@ block content %}
                   </span>
                 </td>
                 <td style="min-width: 120px">
-                  {% if job.total_rows %}
+                  {% if job.total_rows %} {% set progress_percent =
+                  (job.processed_rows / job.total_rows * 100) if job.total_rows
+                  else 0 %}
                   <div class="progress position-relative" style="height: 16px">
                     <div
                       class="progress-bar bg-primary"
                       role="progressbar"
-                      style="width: {{ (job.processed_rows / job.total_rows * 100) if job.total_rows else 0 }}%;"
+                      style="width: {{ progress_percent }}%;"
                     ></div>
-                    <span
-                      class="position-absolute w-100 text-center"
-                      style="
-                        font-size: 12px;
-                        color: white;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        white-space: nowrap;
-                      "
-                    >
-                      {{ job.processed_rows or 0 }}/{{ job.total_rows }}
-                    </span>
                   </div>
-
+                  <small class="text-muted d-block text-center mt-1">
+                    {{ job.processed_rows or 0 }}/{{ job.total_rows }} Rows Processed
+                  </small>
                   {% else %} - {% endif %}
                 </td>
                 <td>
